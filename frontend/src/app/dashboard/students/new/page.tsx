@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
 
@@ -11,8 +11,28 @@ export default function AddStudentPage() {
         lastName: "",
         email: "",
     });
+    const [availableDiscounts, setAvailableDiscounts] = useState<any[]>([]);
+    const [selectedDiscounts, setSelectedDiscounts] = useState<number[]>([]);
+    const [sessions, setSessions] = useState<any[]>([]);
+    const [selectedSessionId, setSelectedSessionId] = useState<number | "">("");
     const [loading, setLoading] = useState(false);
     const [error, setError] = useState("");
+
+    useEffect(() => {
+        fetch('http://localhost:3000/fees/discounts')
+            .then(res => res.json())
+            .then(data => setAvailableDiscounts(data))
+            .catch(err => console.error("Failed to load discounts", err));
+
+        fetch('http://localhost:3000/academic-sessions')
+            .then(res => res.json())
+            .then(data => {
+                setSessions(data);
+                const active = data.find((s: any) => s.isActive);
+                if (active) setSelectedSessionId(active.id);
+            })
+            .catch(err => console.error("Failed to load sessions", err));
+    }, []);
 
     const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
         setFormData({ ...formData, [e.target.name]: e.target.value });
@@ -24,12 +44,18 @@ export default function AddStudentPage() {
         setError("");
 
         try {
+            const payload = {
+                ...formData,
+                discountIds: selectedDiscounts,
+                academicSessionId: selectedSessionId !== "" ? selectedSessionId : undefined
+            };
+
             const res = await fetch("http://localhost:3000/students", {
                 method: "POST",
                 headers: {
                     "Content-Type": "application/json",
                 },
-                body: JSON.stringify(formData),
+                body: JSON.stringify(payload),
             });
 
             if (!res.ok) {
@@ -85,19 +111,63 @@ export default function AddStudentPage() {
                             />
                         </div>
                     </div>
-                    <div className="mb-6">
-                        <label htmlFor="email" className="block mb-2 text-sm font-medium text-gray-900">Email address</label>
-                        <input
-                            type="email"
-                            id="email"
-                            name="email"
-                            value={formData.email}
-                            onChange={handleChange}
-                            className="bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-lg focus:ring-blue-500 focus:border-blue-500 block w-full p-2.5"
-                            placeholder="john.doe@company.com"
-                            required
-                        />
+                    <div className="mb-6 grid grid-cols-1 md:grid-cols-2 gap-6">
+                        <div>
+                            <label htmlFor="email" className="block mb-2 text-sm font-medium text-gray-900">Email address</label>
+                            <input
+                                type="email"
+                                id="email"
+                                name="email"
+                                value={formData.email}
+                                onChange={handleChange}
+                                className="bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-lg focus:ring-blue-500 focus:border-blue-500 block w-full p-2.5"
+                                placeholder="john.doe@company.com"
+                                required
+                            />
+                        </div>
+                        <div>
+                            <label className="block mb-2 text-sm font-medium text-gray-900">Academic Session</label>
+                            <select
+                                value={selectedSessionId}
+                                onChange={(e) => setSelectedSessionId(e.target.value === "" ? "" : Number(e.target.value))}
+                                className="bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-lg focus:ring-blue-500 focus:border-blue-500 block w-full p-2.5"
+                                required
+                            >
+                                <option value="">Select Session</option>
+                                {sessions.map(s => (
+                                    <option key={s.id} value={s.id}>{s.name} {s.isActive ? '(Current)' : ''}</option>
+                                ))}
+                            </select>
+                            <p className="text-xs text-gray-500 mt-1">Select the academic year to enroll into.</p>
+                        </div>
                     </div>
+
+                    {availableDiscounts.length > 0 && (
+                        <div className="mb-6">
+                            <label className="block mb-3 text-sm font-medium text-gray-900">Fee Discounts</label>
+                            <div className="grid grid-cols-2 md:grid-cols-3 gap-3">
+                                {availableDiscounts.map(d => (
+                                    <label key={d.id} className="flex items-center p-3 border border-gray-200 rounded-lg cursor-pointer hover:bg-gray-50 transition-colors">
+                                        <input
+                                            type="checkbox"
+                                            checked={selectedDiscounts.includes(d.id)}
+                                            onChange={(e) => {
+                                                if (e.target.checked) {
+                                                    setSelectedDiscounts([...selectedDiscounts, d.id]);
+                                                } else {
+                                                    setSelectedDiscounts(selectedDiscounts.filter(id => id !== d.id));
+                                                }
+                                            }}
+                                            className="w-4 h-4 text-blue-600 bg-gray-100 border-gray-300 rounded focus:ring-blue-500"
+                                        />
+                                        <span className="ml-2 text-sm font-medium text-gray-900">
+                                            {d.name} ({d.type === 'PERCENTAGE' ? `${d.value}%` : `$${d.value}`})
+                                        </span>
+                                    </label>
+                                ))}
+                            </div>
+                        </div>
+                    )}
 
                     <div className="flex items-center space-x-4">
                         <button

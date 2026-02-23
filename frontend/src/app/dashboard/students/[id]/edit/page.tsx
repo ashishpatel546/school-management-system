@@ -14,11 +14,18 @@ export default function EditStudentPage() {
         email: "",
         isActive: true,
     });
+    const [availableDiscounts, setAvailableDiscounts] = useState<any[]>([]);
+    const [selectedDiscounts, setSelectedDiscounts] = useState<number[]>([]);
     const [loading, setLoading] = useState(true);
     const [saving, setSaving] = useState(false);
     const [error, setError] = useState("");
 
     useEffect(() => {
+        fetch('http://localhost:3000/fees/discounts')
+            .then(res => res.json())
+            .then(data => setAvailableDiscounts(data))
+            .catch(err => console.error("Failed to load discounts", err));
+
         if (!id) return;
         const fetchStudent = async () => {
             try {
@@ -33,6 +40,9 @@ export default function EditStudentPage() {
                         email: student.email,
                         isActive: student.isActive,
                     });
+                    if (student.discounts) {
+                        setSelectedDiscounts(student.discounts.map((d: any) => d.id));
+                    }
                 } else {
                     setError("Student not found");
                 }
@@ -57,12 +67,17 @@ export default function EditStudentPage() {
         setError("");
 
         try {
+            const payload = {
+                ...formData,
+                discountIds: selectedDiscounts
+            };
+
             const res = await fetch(`http://127.0.0.1:3000/students/${id}`, {
                 method: "PATCH",
                 headers: {
                     "Content-Type": "application/json",
                 },
-                body: JSON.stringify(formData),
+                body: JSON.stringify(payload),
             });
 
             if (!res.ok) {
@@ -138,6 +153,33 @@ export default function EditStudentPage() {
                         />
                         <label htmlFor="isActive" className="ml-2 text-sm font-medium text-gray-900">Active</label>
                     </div>
+
+                    {availableDiscounts.length > 0 && (
+                        <div className="mb-6">
+                            <label className="block mb-3 text-sm font-medium text-gray-900">Fee Discounts</label>
+                            <div className="grid grid-cols-2 md:grid-cols-3 gap-3">
+                                {availableDiscounts.map(d => (
+                                    <label key={d.id} className="flex items-center p-3 border border-gray-200 rounded-lg cursor-pointer hover:bg-gray-50 transition-colors">
+                                        <input
+                                            type="checkbox"
+                                            checked={selectedDiscounts.includes(d.id)}
+                                            onChange={(e) => {
+                                                if (e.target.checked) {
+                                                    setSelectedDiscounts([...selectedDiscounts, d.id]);
+                                                } else {
+                                                    setSelectedDiscounts(selectedDiscounts.filter(id => id !== d.id));
+                                                }
+                                            }}
+                                            className="w-4 h-4 text-blue-600 bg-gray-100 border-gray-300 rounded focus:ring-blue-500"
+                                        />
+                                        <span className="ml-2 text-sm font-medium text-gray-900">
+                                            {d.name} ({d.type === 'PERCENTAGE' ? `${d.value}%` : `$${d.value}`})
+                                        </span>
+                                    </label>
+                                ))}
+                            </div>
+                        </div>
+                    )}
 
                     <div className="flex items-center space-x-4">
                         <button

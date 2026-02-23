@@ -1,5 +1,6 @@
 import { Entity, PrimaryGeneratedColumn, Column, OneToOne, OneToMany, JoinColumn } from 'typeorm';
 import { Class } from '../../classes/entities/class.entity';
+import { Section } from '../../classes/entities/section.entity';
 import { SubjectAssignment } from './subject-assignment.entity';
 
 @Entity()
@@ -19,8 +20,8 @@ export class Teacher {
     @Column({ default: true })
     isActive: boolean;
 
-    @OneToOne(() => Class, (cls) => cls.classTeacher, { nullable: true })
-    classTeacherOf: Class;
+    @OneToMany(() => Section, (section) => section.classTeacher, { nullable: true })
+    classTeacherOf: Section[];
 
     @OneToMany(() => SubjectAssignment, (assignment) => assignment.teacher)
     subjectAssignments: SubjectAssignment[];

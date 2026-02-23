@@ -24,10 +24,7 @@ export class TeachersController {
         return this.teachersService.getHistory(id);
     }
 
-    @Patch(':id/assign-class/:classId')
-    assignClassTeacher(@Param('id', ParseIntPipe) id: number, @Param('classId', ParseIntPipe) classId: number) {
-        return this.teachersService.assignClassTeacher(id, classId);
-    }
+
 
     @Post(':id/assign-subject')
     assignSubject(@Param('id', ParseIntPipe) id: number, @Body() dto: AssignSubjectDto) {

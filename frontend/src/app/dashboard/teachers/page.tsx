@@ -47,7 +47,11 @@ export default async function TeachersPage() {
                                     <td className="px-6 py-4 font-medium text-gray-900 whitespace-nowrap">{teacher.id}</td>
                                     <td className="px-6 py-4">{teacher.firstName} {teacher.lastName}</td>
                                     <td className="px-6 py-4">{teacher.email}</td>
-                                    <td className="px-6 py-4">{teacher.classTeacherOf ? teacher.classTeacherOf.name : '-'}</td>
+                                    <td className="px-6 py-4">
+                                        {teacher.classTeacherOf && teacher.classTeacherOf.length > 0
+                                            ? teacher.classTeacherOf.map((s: any) => `${s.class?.name || ''}-${s.name}`).filter(Boolean).join(', ')
+                                            : '-'}
+                                    </td>
                                     <td className="px-6 py-4">
                                         {teacher.subjectAssignments && teacher.subjectAssignments.length > 0
                                             ? teacher.subjectAssignments.map((sa: any) => `${sa.subject.name} (${sa.class.name}-${sa.section.name})`).join(', ')

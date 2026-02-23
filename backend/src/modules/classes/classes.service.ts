@@ -21,18 +21,43 @@ export class ClassesService {
         private classTeacherHistoryRepository: Repository<ClassTeacherHistory>,
     ) { }
 
-    createClass(createClassDto: CreateClassDto) {
-        const newClass = this.classesRepository.create(createClassDto);
-        return this.classesRepository.save(newClass);
+    async createClass(createClassDto: CreateClassDto) {
+        const newClass = this.classesRepository.create({ name: createClassDto.name });
+        const savedClass = await this.classesRepository.save(newClass);
+
+        if (createClassDto.sections && createClassDto.sections.length > 0) {
+            for (const sectionDto of createClassDto.sections) {
+                const newSection = this.sectionsRepository.create({
+                    name: sectionDto.name,
+                    class: savedClass
+                });
+                const savedSection = await this.sectionsRepository.save(newSection);
+
+                if (sectionDto.teacherId) {
+                    await this.assignSectionTeacher(savedSection.id, sectionDto.teacherId);
+                }
+            }
+        }
+
+        return this.findOneClass(savedClass.id);
     }
 
     findAllClasses() {
-        return this.classesRepository.find({ relations: ['sections', 'classTeacher'] });
+        return this.classesRepository.find({
+            relations: ['sections', 'sections.classTeacher', 'sections.students']
+        });
+    }
+
+    findOneClass(id: number) {
+        return this.classesRepository.findOne({
+            where: { id },
+            relations: ['sections', 'sections.classTeacher']
+        });
     }
 
     async updateClass(id: number, updateData: Partial<Class>) {
         await this.classesRepository.update(id, updateData);
-        return this.classesRepository.findOne({ where: { id }, relations: ['sections', 'classTeacher'] });
+        return this.findOneClass(id);
     }
 
     async createSection(createSectionDto: CreateSectionDto) {
@@ -48,27 +73,30 @@ export class ClassesService {
     }
 
     findAllSections() {
-        return this.sectionsRepository.find({ relations: ['class'] });
+        return this.sectionsRepository.find({ relations: ['class', 'classTeacher'] });
     }
+
     async updateSection(id: number, name: string) {
         await this.sectionsRepository.update(id, { name });
-        return this.sectionsRepository.findOne({ where: { id }, relations: ['class'] });
+        return this.sectionsRepository.findOne({ where: { id }, relations: ['class', 'classTeacher'] });
     }
 
     async deleteSection(id: number) {
         return this.sectionsRepository.delete(id);
     }
 
-    async assignClassTeacher(classId: number, teacherId: number) {
-        const cls = await this.classesRepository.findOne({ where: { id: classId }, relations: ['classTeacher'] });
-        if (!cls) throw new NotFoundException('Class not found');
+    async assignSectionTeacher(sectionId: number, teacherId: number) {
+        const section = await this.sectionsRepository.findOne({ where: { id: sectionId }, relations: ['classTeacher'] });
+        if (!section) throw new NotFoundException('Section not found');
 
         const teacher = await this.teachersRepository.findOne({ where: { id: teacherId } });
         if (!teacher) throw new NotFoundException('Teacher not found');
 
+
+
         // Deactivate current history
         const currentHistory = await this.classTeacherHistoryRepository.findOne({
-            where: { class: { id: classId }, isActive: true }
+            where: { section: { id: sectionId }, isActive: true }
         });
 
         if (currentHistory) {
@@ -79,15 +107,15 @@ export class ClassesService {
 
         // Create new history
         const history = this.classTeacherHistoryRepository.create({
-            class: cls,
+            section: section,
             teacher: teacher,
             startDate: new Date(),
             isActive: true
         });
         await this.classTeacherHistoryRepository.save(history);
 
-        // Update class
-        cls.classTeacher = teacher;
-        return this.classesRepository.save(cls);
+        // Update section
+        section.classTeacher = teacher;
+        return this.sectionsRepository.save(section);
     }
 }

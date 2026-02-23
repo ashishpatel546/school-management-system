@@ -18,9 +18,14 @@ export default async function StudentsPage() {
         <main className="p-4">
             <div className="flex justify-between items-center mb-4">
                 <h1 className="text-2xl font-bold text-slate-800">Students</h1>
-                <Link href="/dashboard/students/new" className="text-white bg-blue-700 hover:bg-blue-800 focus:ring-4 focus:ring-blue-300 font-medium rounded-lg text-sm px-5 py-2.5 mr-2 mb-2 focus:outline-none">
-                    Add Student
-                </Link>
+                <div className="space-x-2">
+                    <Link href="/dashboard/students/promotions" className="text-white bg-amber-600 hover:bg-amber-700 focus:ring-4 focus:ring-amber-300 font-medium rounded-lg text-sm px-5 py-2.5 focus:outline-none">
+                        Bulk Promotions
+                    </Link>
+                    <Link href="/dashboard/students/new" className="text-white bg-blue-700 hover:bg-blue-800 focus:ring-4 focus:ring-blue-300 font-medium rounded-lg text-sm px-5 py-2.5 focus:outline-none">
+                        Add Student
+                    </Link>
+                </div>
             </div>
 
             <div className="relative overflow-x-auto shadow-md sm:rounded-lg">
@@ -64,7 +69,6 @@ export default async function StudentsPage() {
                                     </td>
                                     <td className="px-6 py-4 space-x-2">
                                         <Link href={`/dashboard/students/${student.id}/edit`} className="font-medium text-blue-600 hover:underline">Edit</Link>
-                                        <Link href={`/dashboard/students/${student.id}/promote`} className="font-medium text-amber-600 hover:underline">Promote</Link>
                                     </td>
                                 </tr>
                             ))

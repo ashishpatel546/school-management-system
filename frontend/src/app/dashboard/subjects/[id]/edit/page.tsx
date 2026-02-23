@@ -10,12 +10,21 @@ export default function EditSubjectPage() {
     const id = params?.id as string;
     const [formData, setFormData] = useState({
         name: "",
+        subjectCategory: "BASE",
+        feeCategoryId: ""
     });
+    const [feeCategories, setFeeCategories] = useState<any[]>([]);
     const [loading, setLoading] = useState(true);
     const [saving, setSaving] = useState(false);
     const [error, setError] = useState("");
 
     useEffect(() => {
+        // Fetch fee categories
+        fetch('http://localhost:3000/fees/categories')
+            .then(res => res.json())
+            .then(data => setFeeCategories(data))
+            .catch(err => console.error("Failed to fetch fee categories", err));
+
         if (!id) return;
         const fetchSubject = async () => {
             try {
@@ -27,6 +36,8 @@ export default function EditSubjectPage() {
                 if (subject) {
                     setFormData({
                         name: subject.name,
+                        subjectCategory: subject.subjectCategory || "BASE",
+                        feeCategoryId: subject.feeCategory ? subject.feeCategory.id.toString() : ""
                     });
                 } else {
                     setError("Subject not found");
@@ -41,7 +52,7 @@ export default function EditSubjectPage() {
         fetchSubject();
     }, [id]);
 
-    const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) => {
         setFormData({ ...formData, [e.target.name]: e.target.value });
     };
 
@@ -49,14 +60,21 @@ export default function EditSubjectPage() {
         e.preventDefault();
         setSaving(true);
         setError("");
-
         try {
+            const payload: any = {
+                name: formData.name,
+                subjectCategory: formData.subjectCategory,
+            };
+            if (formData.feeCategoryId) {
+                payload.feeCategoryId = parseInt(formData.feeCategoryId);
+            }
+
             const res = await fetch(`http://127.0.0.1:3000/extra-subjects/${id}`, {
                 method: "PATCH",
                 headers: {
                     "Content-Type": "application/json",
                 },
-                body: JSON.stringify(formData),
+                body: JSON.stringify(payload),
             });
 
             if (!res.ok) {
@@ -93,6 +111,39 @@ export default function EditSubjectPage() {
                             className="bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-lg focus:ring-blue-500 focus:border-blue-500 block w-full p-2.5"
                             required
                         />
+                    </div>
+
+                    <div className="mb-6 grid grid-cols-1 md:grid-cols-2 gap-6">
+                        <div>
+                            <label className="block mb-2 text-sm font-medium text-gray-900">Subject Category</label>
+                            <select
+                                name="subjectCategory"
+                                value={formData.subjectCategory}
+                                onChange={handleChange}
+                                className="bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-lg focus:ring-blue-500 focus:border-blue-500 block w-full p-2.5"
+                            >
+                                <option value="BASE">Base / Compulsory</option>
+                                <option value="OPTIONAL">Optional</option>
+                                <option value="VOCATIONAL">Vocational</option>
+                                <option value="ACTIVITY">Activity</option>
+                            </select>
+                        </div>
+
+                        <div>
+                            <label className="block mb-2 text-sm font-medium text-gray-900">Linked Fee Category (Optional)</label>
+                            <select
+                                name="feeCategoryId"
+                                value={formData.feeCategoryId}
+                                onChange={handleChange}
+                                className="bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-lg focus:ring-blue-500 focus:border-blue-500 block w-full p-2.5"
+                            >
+                                <option value="">-- None (Implicit) --</option>
+                                {feeCategories.map(c => (
+                                    <option key={c.id} value={c.id}>{c.name}</option>
+                                ))}
+                            </select>
+                            <p className="mt-1 text-xs text-gray-500">If mapped, opting into this subject will auto-apply this fee type dynamically.</p>
+                        </div>
                     </div>
 
                     <div className="flex items-center space-x-4">

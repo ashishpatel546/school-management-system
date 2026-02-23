@@ -1,14 +1,25 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
 
 export default function AddSubjectPage() {
     const router = useRouter();
     const [name, setName] = useState("");
+    const [subjectCategory, setSubjectCategory] = useState("BASE");
+    const [feeCategoryId, setFeeCategoryId] = useState("");
+    const [feeCategories, setFeeCategories] = useState<any[]>([]);
+
     const [loading, setLoading] = useState(false);
     const [error, setError] = useState("");
+
+    useEffect(() => {
+        fetch('http://localhost:3000/fees/categories')
+            .then(res => res.json())
+            .then(data => setFeeCategories(data))
+            .catch(err => console.error("Failed to fetch fee categories", err));
+    }, []);
 
     const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault();
@@ -21,7 +32,11 @@ export default function AddSubjectPage() {
                 headers: {
                     "Content-Type": "application/json",
                 },
-                body: JSON.stringify({ name }),
+                body: JSON.stringify({
+                    name,
+                    subjectCategory,
+                    feeCategoryId: feeCategoryId ? parseInt(feeCategoryId) : undefined
+                }),
             });
 
             if (!res.ok) {
@@ -60,6 +75,37 @@ export default function AddSubjectPage() {
                             placeholder="Mathematics"
                             required
                         />
+                    </div>
+
+                    <div className="mb-6 grid grid-cols-1 md:grid-cols-2 gap-6">
+                        <div>
+                            <label className="block mb-2 text-sm font-medium text-gray-900">Subject Category</label>
+                            <select
+                                value={subjectCategory}
+                                onChange={(e) => setSubjectCategory(e.target.value)}
+                                className="bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-lg focus:ring-blue-500 focus:border-blue-500 block w-full p-2.5"
+                            >
+                                <option value="BASE">Base / Compulsory</option>
+                                <option value="OPTIONAL">Optional</option>
+                                <option value="VOCATIONAL">Vocational</option>
+                                <option value="ACTIVITY">Activity</option>
+                            </select>
+                        </div>
+
+                        <div>
+                            <label className="block mb-2 text-sm font-medium text-gray-900">Linked Fee Category (Optional)</label>
+                            <select
+                                value={feeCategoryId}
+                                onChange={(e) => setFeeCategoryId(e.target.value)}
+                                className="bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-lg focus:ring-blue-500 focus:border-blue-500 block w-full p-2.5"
+                            >
+                                <option value="">-- None (Implicit) --</option>
+                                {feeCategories.map(c => (
+                                    <option key={c.id} value={c.id}>{c.name}</option>
+                                ))}
+                            </select>
+                            <p className="mt-1 text-xs text-gray-500">If mapped, opting into this subject will auto-apply this fee type dynamically.</p>
+                        </div>
                     </div>
 
                     <div className="flex items-center space-x-4">

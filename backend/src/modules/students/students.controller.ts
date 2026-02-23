@@ -26,9 +26,15 @@ export class StudentsController {
         return this.studentsService.enroll(id, enrollmentData.classId, enrollmentData.sectionId, enrollmentData.subjectIds);
     }
 
-    @Patch(':id/promote')
-    promote(@Param('id', ParseIntPipe) id: number, @Body() promotionData: { classId: number; sectionId: number }) {
-        return this.studentsService.promote(id, promotionData.classId, promotionData.sectionId);
+    @Post('promotions/bulk')
+    bulkPromote(@Body() promotionData: { studentIds: number[]; fromSessionId: number; toSessionId: number; targetClassId: number; targetSectionId: number; }) {
+        return this.studentsService.promoteBulk(
+            promotionData.studentIds,
+            promotionData.fromSessionId,
+            promotionData.toSessionId,
+            promotionData.targetClassId,
+            promotionData.targetSectionId
+        );
     }
 
     @Patch(':id')

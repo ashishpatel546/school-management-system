@@ -58,3 +58,23 @@
 ## Handover Note
 - **Project Status**: See [PROJECT_STATUS.md](PROJECT_STATUS.md) in the root directory for a detailed summary of completed features and pending tasks.
 - **Git**: Code committed and pushed to `git@github.com:ashishpatel546/school-management-system.git` (Branch: `main`).
+
+### Duplicate Enrollment Fix
+- **Issue**: Students could be enrolled in the same subject multiple times.
+- **Fix**: Updated `StudentsService.enroll` to check for existing subject assignments before creating new ones.
+- **Verification**: Verified via API that re-submitting the same subject does not create duplicate entries.
+
+### Un-enrollment Fix
+- **Issue**: Unchecking a subject in the UI did not remove it from the student's enrollment.
+- **Fix**: Updated `StudentsService.enroll` to identify and remove subjects that are present in the database but missing from the submission (sync logic).
+- **Verification**: Verified via API that submitting a reduced list of subjects correctly removes the unlisted ones from the database.
+
+### Enrollment Page Enhancements
+- **Advanced Search**: Added dedicated dropdowns (Class/Section) and a Manual **Search Button**. The list only updates when *Search* is clicked.
+- **Results Table**: Replaced the dropdown list with a clear **Table View** showing:
+    -   ID, Name, Class/Section, and currently Enrolled Subjects.
+    -   **Action**: An "Edit Enrollment" button to select the student.
+    -   **Sorting**: Columns "ID" and "Name" are sortable (ascending/descending) by clicking the header. Default sort is by **Name**.
+- **Enrolled Subjects Visualization**: The table displays subjects as color-coded tags for quick scanning.
+- **Read-Only Fields**: If a student is already assigned to a Class/Section, these fields are displayed as **static text** with a helpful message.
+

@@ -44,8 +44,8 @@ export class ClassesController {
         return this.classesService.deleteSection(id);
     }
 
-    @Post(':id/teacher')
-    assignClassTeacher(@Param('id', ParseIntPipe) id: number, @Body('teacherId', ParseIntPipe) teacherId: number) {
-        return this.classesService.assignClassTeacher(id, teacherId);
+    @Post('sections/:id/teacher')
+    assignSectionTeacher(@Param('id', ParseIntPipe) id: number, @Body('teacherId', ParseIntPipe) teacherId: number) {
+        return this.classesService.assignSectionTeacher(id, teacherId);
     }
 }

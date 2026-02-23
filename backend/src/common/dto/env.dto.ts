@@ -17,10 +17,23 @@ export class EnvDto {
   PORT: number = 3000;
 
   @IsString()
-  DATABASE_URL: string;
+  DB_HOST: string;
+
+  @IsNumber()
+  @Transform(({ value }) => parseInt(value, 10))
+  DB_PORT: number = 5432;
+
+  @IsString()
+  DB_USERNAME: string;
+
+  @IsString()
+  DB_PASSWORD: string;
+
+  @IsString()
+  DB_DATABASE: string;
 
   @IsBoolean()
-  @Transform(({ value }) => value === 'true')
+  @Transform(({ value }) => value === 'true' || value === true)
   @IsOptional()
   SWAGGER_ENABLED: boolean = true;
 }

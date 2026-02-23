@@ -1,6 +1,6 @@
 import { Entity, PrimaryGeneratedColumn, Column, ManyToOne, CreateDateColumn } from 'typeorm';
 import { Teacher } from '../../teachers/entities/teacher.entity';
-import { Class } from '../../classes/entities/class.entity';
+import { Section } from '../../classes/entities/section.entity';
 
 @Entity()
 export class ClassTeacherHistory {
@@ -10,8 +10,8 @@ export class ClassTeacherHistory {
     @ManyToOne(() => Teacher)
     teacher: Teacher;
 
-    @ManyToOne(() => Class)
-    class: Class;
+    @ManyToOne(() => Section)
+    section: Section;
 
     @Column()
     startDate: Date;

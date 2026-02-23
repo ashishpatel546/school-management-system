@@ -27,18 +27,10 @@ export class TeachersService {
     }
 
     findAll() {
-        return this.teachersRepository.find({ relations: ['classTeacherOf', 'subjectAssignments', 'subjectAssignments.subject', 'subjectAssignments.class', 'subjectAssignments.section'] });
+        return this.teachersRepository.find({ relations: ['classTeacherOf', 'classTeacherOf.class', 'subjectAssignments', 'subjectAssignments.subject', 'subjectAssignments.class', 'subjectAssignments.section'] });
     }
 
-    async assignClassTeacher(teacherId: number, classId: number) {
-        const teacher = await this.teachersRepository.findOne({ where: { id: teacherId } });
-        const cls = await this.classesRepository.findOne({ where: { id: classId } });
 
-        if (!teacher || !cls) throw new NotFoundException('Teacher or Class not found');
-
-        cls.classTeacher = teacher;
-        return this.classesRepository.save(cls);
-    }
 
     async assignSubject(teacherId: number, dto: AssignSubjectDto) {
         // Deactivate existing active assignment for this subject/class/section
@@ -80,7 +72,7 @@ export class TeachersService {
 
         const classTeacherHistory = await this.classTeacherHistoryRepository.find({
             where: { teacher: { id: teacherId } },
-            relations: ['class'],
+            relations: ['section', 'section.class'],
             order: { startDate: 'DESC' },
         });
 

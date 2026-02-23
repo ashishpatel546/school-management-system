@@ -35,16 +35,16 @@ export class HistoryService {
         return this.studentHistoryRepo.save(history);
     }
 
-    async logClassTeacherAssignment(teacher: Teacher, cls: Class) {
-        // Deactivate previous active records for this class
+    async logSectionTeacherAssignment(teacher: Teacher, section: Section) {
+        // Deactivate previous active records for this section
         await this.classTeacherHistoryRepo.update(
-            { class: { id: cls.id }, isActive: true },
+            { section: { id: section.id }, isActive: true },
             { isActive: false, endDate: new Date() }
         );
 
         const history = this.classTeacherHistoryRepo.create({
             teacher,
-            class: cls,
+            section: section,
             startDate: new Date(),
             isActive: true,
         });
