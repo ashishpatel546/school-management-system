@@ -1,4 +1,5 @@
 import { Injectable, NotFoundException } from '@nestjs/common';
+import { UserRole } from '../users/entities/user.entity';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
 import { Teacher } from './entities/teacher.entity';
@@ -21,13 +22,48 @@ export class TeachersService {
         private classTeacherHistoryRepository: Repository<ClassTeacherHistory>,
     ) { }
 
-    create(createTeacherDto: CreateTeacherDto) {
-        const teacher = this.teachersRepository.create(createTeacherDto);
+    create(createTeacherDto: any) {
+        const teacher = this.teachersRepository.create({
+            user: {
+                firstName: createTeacherDto.firstName,
+                lastName: createTeacherDto.lastName,
+                email: createTeacherDto.email || null,
+                mobile: createTeacherDto.mobile,
+                gender: createTeacherDto.gender,
+                isActive: createTeacherDto.isActive !== undefined ? createTeacherDto.isActive : true,
+                role: UserRole.TEACHER
+            } as any
+        });
         return this.teachersRepository.save(teacher);
     }
 
-    findAll() {
-        return this.teachersRepository.find({ relations: ['classTeacherOf', 'classTeacherOf.class', 'subjectAssignments', 'subjectAssignments.subject', 'subjectAssignments.class', 'subjectAssignments.section'] });
+    async findAll(queryParams: any = {}) {
+        const qb = this.teachersRepository.createQueryBuilder('teacher')
+            .leftJoinAndSelect('teacher.user', 'user')
+            .leftJoinAndSelect('teacher.classTeacherOf', 'classTeacherOf')
+            .leftJoinAndSelect('classTeacherOf.class', 'class')
+            .leftJoinAndSelect('teacher.subjectAssignments', 'subjectAssignments')
+            .leftJoinAndSelect('subjectAssignments.subject', 'subject')
+            .leftJoinAndSelect('subjectAssignments.class', 'assignmentClass')
+            .leftJoinAndSelect('subjectAssignments.section', 'assignmentSection');
+
+        if (queryParams.id) {
+            qb.andWhere('teacher.id = :id', { id: queryParams.id });
+        }
+        if (queryParams.firstName) {
+            qb.andWhere('LOWER(user.firstName) LIKE LOWER(:firstName)', { firstName: `%${queryParams.firstName}%` });
+        }
+        if (queryParams.lastName) {
+            qb.andWhere('LOWER(user.lastName) LIKE LOWER(:lastName)', { lastName: `%${queryParams.lastName}%` });
+        }
+        if (queryParams.email) {
+            qb.andWhere('LOWER(user.email) LIKE LOWER(:email)', { email: `%${queryParams.email}%` });
+        }
+        if (queryParams.isActive !== undefined && queryParams.isActive !== '') {
+            qb.andWhere('user.isActive = :isActive', { isActive: queryParams.isActive === 'true' });
+        }
+
+        return qb.getMany();
     }
 
 
@@ -58,9 +94,21 @@ export class TeachersService {
         return this.subjectAssignmentRepository.save(assignment);
     }
 
-    async update(id: number, updateData: Partial<Teacher>) {
-        await this.teachersRepository.update(id, updateData);
-        return this.teachersRepository.findOne({ where: { id } });
+    async update(id: number, updateData: any) {
+        const teacher = await this.teachersRepository.findOne({ where: { id }, relations: ['user'] });
+        if (!teacher) throw new NotFoundException('Teacher not found');
+
+        if (!teacher.user) teacher.user = {} as any;
+
+        if (updateData.firstName !== undefined) teacher.user.firstName = updateData.firstName;
+        if (updateData.lastName !== undefined) teacher.user.lastName = updateData.lastName;
+        if (updateData.email !== undefined) teacher.user.email = updateData.email || null;
+        if (updateData.isActive !== undefined) teacher.user.isActive = updateData.isActive;
+        if (updateData.mobile !== undefined) teacher.user.mobile = updateData.mobile;
+        if (updateData.gender !== undefined) teacher.user.gender = updateData.gender;
+
+        await this.teachersRepository.save(teacher);
+        return this.teachersRepository.findOne({ where: { id }, relations: ['user'] });
     }
 
     async getHistory(teacherId: number) {

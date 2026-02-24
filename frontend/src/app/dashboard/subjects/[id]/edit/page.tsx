@@ -97,7 +97,12 @@ export default function EditSubjectPage() {
     return (
         <main className="p-4">
             <div className="max-w-2xl mx-auto bg-white p-8 rounded-lg shadow-sm border border-slate-200">
-                <h2 className="text-2xl font-bold mb-6 text-slate-800">Edit Subject</h2>
+                <div className="flex justify-between items-center mb-6">
+                    <h2 className="text-2xl font-bold text-slate-800">Edit Subject</h2>
+                    <Link href="/dashboard/subjects" className="text-blue-600 hover:underline">
+                        &larr; Back to Subjects
+                    </Link>
+                </div>
 
                 <form onSubmit={handleSubmit}>
                     <div className="mb-6">

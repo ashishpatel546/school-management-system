@@ -1,4 +1,5 @@
 import { Entity, PrimaryGeneratedColumn, Column, OneToOne, OneToMany, JoinColumn } from 'typeorm';
+import { User } from '../../users/entities/user.entity';
 import { Class } from '../../classes/entities/class.entity';
 import { Section } from '../../classes/entities/section.entity';
 import { SubjectAssignment } from './subject-assignment.entity';
@@ -8,17 +9,9 @@ export class Teacher {
     @PrimaryGeneratedColumn()
     id: number;
 
-    @Column()
-    firstName: string;
-
-    @Column()
-    lastName: string;
-
-    @Column({ unique: true })
-    email: string;
-
-    @Column({ default: true })
-    isActive: boolean;
+    @OneToOne(() => User, { cascade: true, eager: true })
+    @JoinColumn()
+    user: User;
 
     @OneToMany(() => Section, (section) => section.classTeacher, { nullable: true })
     classTeacherOf: Section[];

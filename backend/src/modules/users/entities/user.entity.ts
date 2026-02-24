@@ -8,6 +8,15 @@ export enum UserRole {
     PARENT = 'PARENT',
 }
 
+export enum Religion {
+    HINDU = 'HINDU',
+    MUSLIM = 'MUSLIM',
+    SIKH = 'SIKH',
+    CHRISTIAN = 'CHRISTIAN',
+    PARSI = 'PARSI',
+    OTHERS = 'OTHERS',
+}
+
 @Entity()
 export class User {
     @PrimaryGeneratedColumn()
@@ -19,7 +28,7 @@ export class User {
     @Column()
     lastName: string;
 
-    @Column({ unique: true })
+    @Column({ unique: true, nullable: true })
     email: string;
 
     @Column({
@@ -31,6 +40,40 @@ export class User {
 
     @Column({ default: true })
     isActive: boolean;
+
+    @Column({ nullable: true })
+    mobile: string;
+
+    @Column({ nullable: true })
+    alternateMobile: string;
+
+    @Column({ nullable: true })
+    gender: string;
+
+    @Column({ nullable: true })
+    fathersName: string;
+
+    @Column({ nullable: true })
+    mothersName: string;
+
+    @Column({ nullable: true })
+    aadhaarNumber: string;
+
+    @Column({ nullable: true })
+    category: string;
+
+    @Column({
+        type: 'enum',
+        enum: Religion,
+        nullable: true,
+    })
+    religion: Religion;
+
+    @Column({ nullable: true })
+    bloodGroup: string;
+
+    @Column({ type: 'date', nullable: true })
+    dateOfBirth: string;
 
     @CreateDateColumn()
     createdAt: Date;

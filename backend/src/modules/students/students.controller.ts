@@ -1,4 +1,4 @@
-import { Controller, Get, Post, Body, Param, ParseIntPipe, Patch } from '@nestjs/common';
+import { Controller, Get, Post, Body, Param, ParseIntPipe, Patch, Query } from '@nestjs/common';
 import { StudentsService } from './students.service';
 import { CreateStudentDto } from './dto/create-student.dto';
 
@@ -6,19 +6,28 @@ import { CreateStudentDto } from './dto/create-student.dto';
 export class StudentsController {
     constructor(private readonly studentsService: StudentsService) { }
 
+    private flattenUser(entity: any) {
+        if (!entity || !entity.user) return entity;
+        const { user, ...rest } = entity;
+        return { ...rest, ...user, id: entity.id };
+    }
+
     @Post()
-    create(@Body() createStudentDto: CreateStudentDto) {
-        return this.studentsService.create(createStudentDto);
+    async create(@Body() createStudentDto: CreateStudentDto) {
+        const student = await this.studentsService.create(createStudentDto);
+        return this.flattenUser(student);
     }
 
     @Get()
-    findAll() {
-        return this.studentsService.findAll();
+    async findAll(@Query() query: any) {
+        const students = await this.studentsService.findAll(query);
+        return students.map(s => this.flattenUser(s));
     }
 
     @Get(':id')
-    findOne(@Param('id', ParseIntPipe) id: number) {
-        return this.studentsService.findOne(id);
+    async findOne(@Param('id', ParseIntPipe) id: number) {
+        const student = await this.studentsService.findOne(id);
+        return this.flattenUser(student);
     }
 
     @Post(':id/enroll')
@@ -38,7 +47,8 @@ export class StudentsController {
     }
 
     @Patch(':id')
-    update(@Param('id', ParseIntPipe) id: number, @Body() updateData: any) {
-        return this.studentsService.update(id, updateData);
+    async update(@Param('id', ParseIntPipe) id: number, @Body() updateData: any) {
+        const student = await this.studentsService.update(id, updateData);
+        return this.flattenUser(student);
     }
 }

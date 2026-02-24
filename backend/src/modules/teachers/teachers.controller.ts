@@ -1,4 +1,4 @@
-import { Controller, Get, Post, Body, Param, ParseIntPipe, Patch } from '@nestjs/common';
+import { Controller, Get, Post, Body, Param, ParseIntPipe, Patch, Query } from '@nestjs/common';
 import { TeachersService } from './teachers.service';
 import { CreateTeacherDto } from './dto/create-teacher.dto';
 import { AssignSubjectDto } from './dto/assign-subject.dto';
@@ -9,14 +9,22 @@ import { ApiTags } from '@nestjs/swagger';
 export class TeachersController {
     constructor(private readonly teachersService: TeachersService) { }
 
+    private flattenUser(entity: any) {
+        if (!entity || !entity.user) return entity;
+        const { user, ...rest } = entity;
+        return { ...rest, ...user, id: entity.id };
+    }
+
     @Post()
-    create(@Body() createTeacherDto: CreateTeacherDto) {
-        return this.teachersService.create(createTeacherDto);
+    async create(@Body() createTeacherDto: CreateTeacherDto) {
+        const teacher = await this.teachersService.create(createTeacherDto);
+        return this.flattenUser(teacher);
     }
 
     @Get()
-    findAll() {
-        return this.teachersService.findAll();
+    async findAll(@Query() query: any) {
+        const teachers = await this.teachersService.findAll(query);
+        return teachers.map(t => this.flattenUser(t));
     }
 
     @Get(':id/history')
@@ -32,7 +40,8 @@ export class TeachersController {
     }
 
     @Patch(':id')
-    update(@Param('id', ParseIntPipe) id: number, @Body() updateData: any) {
-        return this.teachersService.update(id, updateData);
+    async update(@Param('id', ParseIntPipe) id: number, @Body() updateData: any) {
+        const teacher = await this.teachersService.update(id, updateData);
+        return this.flattenUser(teacher);
     }
 }

@@ -20,4 +20,14 @@ export class CreateTeacherDto {
     @IsOptional()
     @IsBoolean()
     isActive?: boolean;
+
+    @ApiProperty({ example: '1234567890', description: 'Mobile number of the teacher', required: false })
+    @IsOptional()
+    @IsString()
+    mobile?: string;
+
+    @ApiProperty({ example: 'Female', description: 'Gender of the teacher', required: false })
+    @IsOptional()
+    @IsString()
+    gender?: string;
 }

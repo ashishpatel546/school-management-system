@@ -24,9 +24,9 @@ export default function ClassesPage() {
                                 id: sec.id,
                                 className: cls.name, // "Class 10"
                                 sectionName: sec.name, // "A"
-                                classTeacher: sec.classTeacher
-                                    ? `${sec.classTeacher.firstName} ${sec.classTeacher.lastName}`
-                                    : 'Not Assigned',
+                                classTeacher: sec.classTeacher?.user
+                                    ? `${sec.classTeacher.user.firstName} ${sec.classTeacher.user.lastName}`
+                                    : '',
                                 studentCount: sec.students ? sec.students.length : 0,
                                 classId: cls.id // For editing link
                             }))
@@ -34,7 +34,7 @@ export default function ClassesPage() {
                                 id: `cls-${cls.id}`,
                                 className: cls.name,
                                 sectionName: 'No Sections',
-                                classTeacher: '-',
+                                classTeacher: '',
                                 studentCount: 0,
                                 classId: cls.id
                             }]

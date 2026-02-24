@@ -35,5 +35,10 @@ export class EnvDto {
   @IsBoolean()
   @Transform(({ value }) => value === 'true' || value === true)
   @IsOptional()
+  DB_SYNCHRONIZE: boolean = false;
+
+  @IsBoolean()
+  @Transform(({ value }) => value === 'true' || value === true)
+  @IsOptional()
   SWAGGER_ENABLED: boolean = true;
 }

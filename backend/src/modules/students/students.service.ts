@@ -1,4 +1,5 @@
 import { Injectable } from '@nestjs/common';
+import { UserRole } from '../users/entities/user.entity';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
 import { Student } from './entities/student.entity';
@@ -23,7 +24,26 @@ export class StudentsService {
     ) { }
 
     async create(createStudentDto: any) {
-        let student = this.studentsRepository.create(createStudentDto) as unknown as Student;
+        let student = this.studentsRepository.create({
+            siblingId: createStudentDto.siblingId,
+            user: {
+                firstName: createStudentDto.firstName,
+                lastName: createStudentDto.lastName,
+                email: createStudentDto.email || null,
+                mobile: createStudentDto.mobile,
+                alternateMobile: createStudentDto.alternateMobile,
+                gender: createStudentDto.gender,
+                fathersName: createStudentDto.fathersName,
+                mothersName: createStudentDto.mothersName,
+                aadhaarNumber: createStudentDto.aadhaarNumber,
+                category: createStudentDto.category,
+                religion: createStudentDto.religion,
+                bloodGroup: createStudentDto.bloodGroup,
+                dateOfBirth: createStudentDto.dateOfBirth,
+                isActive: createStudentDto.isActive !== undefined ? createStudentDto.isActive : true,
+                role: UserRole.STUDENT
+            }
+        }) as unknown as Student;
         if (createStudentDto.discountIds && createStudentDto.discountIds.length > 0) {
             student.discounts = createStudentDto.discountIds.map((id: number) => ({ id } as any));
         }
@@ -51,12 +71,43 @@ export class StudentsService {
         return student;
     }
 
-    findAll() {
-        return this.studentsRepository.find({ relations: ['studentSubjects', 'studentSubjects.extraSubject', 'class', 'section', 'discounts', 'enrollments', 'enrollments.academicSession', 'enrollments.class', 'enrollments.section'] });
+    async findAll(queryParams: any = {}) {
+        const qb = this.studentsRepository.createQueryBuilder('student')
+            .leftJoinAndSelect('student.user', 'user')
+            .leftJoinAndSelect('student.studentSubjects', 'studentSubjects')
+            .leftJoinAndSelect('studentSubjects.extraSubject', 'extraSubject')
+            .leftJoinAndSelect('student.class', 'class')
+            .leftJoinAndSelect('student.section', 'section')
+            .leftJoinAndSelect('student.discounts', 'discounts')
+            .leftJoinAndSelect('student.enrollments', 'enrollments')
+            .leftJoinAndSelect('enrollments.academicSession', 'academicSession')
+            .leftJoinAndSelect('enrollments.class', 'enrollmentClass')
+            .leftJoinAndSelect('enrollments.section', 'enrollmentSection');
+
+        if (queryParams.id) {
+            qb.andWhere('student.id = :id', { id: queryParams.id });
+        }
+        if (queryParams.firstName) {
+            qb.andWhere('LOWER(user.firstName) LIKE LOWER(:firstName)', { firstName: `%${queryParams.firstName}%` });
+        }
+        if (queryParams.lastName) {
+            qb.andWhere('LOWER(user.lastName) LIKE LOWER(:lastName)', { lastName: `%${queryParams.lastName}%` });
+        }
+        if (queryParams.email) {
+            qb.andWhere('LOWER(user.email) LIKE LOWER(:email)', { email: `%${queryParams.email}%` });
+        }
+        if (queryParams.parentsName) {
+            qb.andWhere('(LOWER(user.fathersName) LIKE LOWER(:parents) OR LOWER(user.mothersName) LIKE LOWER(:parents))', { parents: `%${queryParams.parentsName}%` });
+        }
+        if (queryParams.isActive !== undefined && queryParams.isActive !== '') {
+            qb.andWhere('user.isActive = :isActive', { isActive: queryParams.isActive === 'true' });
+        }
+
+        return qb.getMany();
     }
 
     findOne(id: number) {
-        return this.studentsRepository.findOne({ where: { id }, relations: ['studentSubjects', 'studentSubjects.extraSubject', 'class', 'section', 'discounts', 'enrollments', 'enrollments.academicSession', 'enrollments.class', 'enrollments.section'] });
+        return this.studentsRepository.findOne({ where: { id }, relations: ['user', 'studentSubjects', 'studentSubjects.extraSubject', 'class', 'section', 'discounts', 'enrollments', 'enrollments.academicSession', 'enrollments.class', 'enrollments.section'] });
     }
 
     async enroll(studentId: number, classId: number, sectionId: number, extraSubjectIds: number[], academicSessionId?: number) {
@@ -179,16 +230,30 @@ export class StudentsService {
     }
 
     async update(id: number, updateData: any) {
-        const student = await this.studentsRepository.findOne({ where: { id }, relations: ['discounts'] });
+        const student = await this.studentsRepository.findOne({ where: { id }, relations: ['discounts', 'user'] });
         if (!student) throw new Error('Student not found');
 
-        if (updateData.firstName !== undefined) student.firstName = updateData.firstName;
-        if (updateData.lastName !== undefined) student.lastName = updateData.lastName;
-        if (updateData.email !== undefined) student.email = updateData.email;
-        if (updateData.isActive !== undefined) student.isActive = updateData.isActive;
+        if (!student.user) student.user = {} as any;
+
+        if (updateData.firstName !== undefined) student.user.firstName = updateData.firstName;
+        if (updateData.lastName !== undefined) student.user.lastName = updateData.lastName;
+        if (updateData.email !== undefined) student.user.email = updateData.email || null;
+        if (updateData.isActive !== undefined) student.user.isActive = updateData.isActive;
+        if (updateData.mobile !== undefined) student.user.mobile = updateData.mobile;
+        if (updateData.alternateMobile !== undefined) student.user.alternateMobile = updateData.alternateMobile;
+        if (updateData.gender !== undefined) student.user.gender = updateData.gender;
+        if (updateData.fathersName !== undefined) student.user.fathersName = updateData.fathersName;
+        if (updateData.mothersName !== undefined) student.user.mothersName = updateData.mothersName;
+        if (updateData.aadhaarNumber !== undefined) student.user.aadhaarNumber = updateData.aadhaarNumber;
+        if (updateData.category !== undefined) student.user.category = updateData.category;
+        if (updateData.religion !== undefined) student.user.religion = updateData.religion;
+        if (updateData.bloodGroup !== undefined) student.user.bloodGroup = updateData.bloodGroup;
+        if (updateData.dateOfBirth !== undefined) student.user.dateOfBirth = updateData.dateOfBirth;
+
+        if (updateData.siblingId !== undefined) student.siblingId = updateData.siblingId;
 
         if (updateData.discountIds !== undefined) {
-            student.discounts = updateData.discountIds.map((dId: number) => ({ id: dId }));
+            student.discounts = updateData.discountIds.map((dId: number) => ({ id: dId } as any));
         }
 
         return this.studentsRepository.save(student);

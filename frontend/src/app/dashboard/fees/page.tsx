@@ -25,7 +25,7 @@ export default function FeesDashboardPage() {
     const [formClassId, setFormClassId] = useState("");
     const [formCategoryId, setFormCategoryId] = useState("");
     const [formAmount, setFormAmount] = useState("");
-    const [formAcademicYear, setFormAcademicYear] = useState("2026-2027");
+    const [formAcademicYear, setFormAcademicYear] = useState("");
 
     // New Discount Form
     const [discounts, setDiscounts] = useState<any[]>([]);
@@ -78,7 +78,10 @@ export default function FeesDashboardPage() {
                     const sessList = await sessionRes.json();
                     setSessions(sessList);
                     const active = sessList.find((s: any) => s.isActive);
-                    if (active) setCollectionYear(active.name);
+                    if (active) {
+                        setCollectionYear(active.name);
+                        setFormAcademicYear(active.name);
+                    }
                 }
             } catch (err) {
                 console.error("Failed to load setup data", err);
@@ -522,7 +525,10 @@ export default function FeesDashboardPage() {
                                     </div>
                                     <div>
                                         <label className="block mb-2 text-sm font-medium text-gray-900">Academic Year</label>
-                                        <input type="text" value={formAcademicYear} onChange={(e) => setFormAcademicYear(e.target.value)} className="bg-gray-50 border border-gray-300 text-sm rounded-lg block w-full p-2.5 transition-colors focus:ring-blue-500 focus:border-blue-500" required />
+                                        <select value={formAcademicYear} onChange={(e) => setFormAcademicYear(e.target.value)} className="bg-gray-50 border border-gray-300 text-sm rounded-lg block w-full p-2.5 transition-colors focus:ring-blue-500 focus:border-blue-500" required>
+                                            <option value="">Select Year</option>
+                                            {sessions.map((s: any) => <option key={s.id} value={s.name}>{s.name} {s.isActive ? '(Current)' : ''}</option>)}
+                                        </select>
                                     </div>
                                 </div>
                                 <button type="submit" className="text-white bg-indigo-600 hover:bg-indigo-700 transition-colors py-2 px-4 rounded text-sm w-full font-medium">Define Structure</button>

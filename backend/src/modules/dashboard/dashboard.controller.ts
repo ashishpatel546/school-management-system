@@ -21,8 +21,14 @@ export class DashboardController {
     @Get('stats')
     async getStats() {
         const [students, teachers, classes] = await Promise.all([
-            this.studentsRepository.count({ where: { isActive: true } }),
-            this.teachersRepository.count({ where: { isActive: true } }),
+            this.studentsRepository.createQueryBuilder('student')
+                .leftJoin('student.user', 'user')
+                .where('user.isActive = :isActive', { isActive: true })
+                .getCount(),
+            this.teachersRepository.createQueryBuilder('teacher')
+                .leftJoin('teacher.user', 'user')
+                .where('user.isActive = :isActive', { isActive: true })
+                .getCount(),
             this.classesRepository.count(),
         ]);
 

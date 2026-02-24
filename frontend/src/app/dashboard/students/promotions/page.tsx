@@ -300,8 +300,8 @@ export default function BulkPromotionsPage() {
                                             </td>
                                             <td className="px-6 py-4">
                                                 <span className={`px-2.5 py-1 text-xs font-semibold rounded-full ${currentEnrollment?.status === 'ACTIVE' ? 'bg-green-100 text-green-800' :
-                                                        currentEnrollment?.status === 'PROMOTED' ? 'bg-blue-100 text-blue-800' :
-                                                            'bg-slate-100 text-slate-800'
+                                                    currentEnrollment?.status === 'PROMOTED' ? 'bg-blue-100 text-blue-800' :
+                                                        'bg-slate-100 text-slate-800'
                                                     }`}>
                                                     {currentEnrollment?.status || 'UNKNOWN'}
                                                 </span>

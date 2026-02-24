@@ -1,4 +1,5 @@
-import { Entity, PrimaryGeneratedColumn, Column, OneToMany, ManyToOne, ManyToMany, JoinTable } from 'typeorm';
+import { Entity, PrimaryGeneratedColumn, Column, OneToMany, ManyToOne, ManyToMany, JoinTable, OneToOne, JoinColumn } from 'typeorm';
+import { User } from '../../users/entities/user.entity';
 import { StudentSubject } from './student-subject.entity';
 import { Class } from '../../classes/entities/class.entity';
 import { Section } from '../../classes/entities/section.entity';
@@ -10,17 +11,12 @@ export class Student {
     @PrimaryGeneratedColumn()
     id: number;
 
-    @Column()
-    firstName: string;
+    @OneToOne(() => User, { cascade: true, eager: true })
+    @JoinColumn()
+    user: User;
 
-    @Column()
-    lastName: string;
-
-    @Column({ unique: true })
-    email: string;
-
-    @Column({ default: true })
-    isActive: boolean;
+    @Column({ nullable: true })
+    siblingId: number;
 
     @OneToMany(() => StudentSubject, (studentSubject) => studentSubject.student)
     studentSubjects: StudentSubject[];
