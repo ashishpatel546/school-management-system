@@ -3,6 +3,7 @@
 import { useState, useEffect } from "react";
 import { useParams, useRouter } from "next/navigation";
 import Link from "next/link";
+import { API_BASE_URL } from "@/lib/api";
 
 export default function PromoteStudentPage() {
     const router = useRouter();
@@ -22,14 +23,14 @@ export default function PromoteStudentPage() {
         const fetchData = async () => {
             try {
                 // Fetch Student
-                const resStudent = await fetch(`http://127.0.0.1:3000/students/${id}`);
+                const resStudent = await fetch(`${API_BASE_URL}/students/${id}`);
 
                 if (!resStudent.ok) throw new Error("Failed to fetch student");
 
                 const foundStudent = await resStudent.json();
 
                 // Fetch Classes (which should include sections)
-                const resClasses = await fetch(`http://127.0.0.1:3000/classes`);
+                const resClasses = await fetch(`${API_BASE_URL}/classes`);
                 const classesData = await resClasses.json();
 
                 if (foundStudent) {
@@ -66,7 +67,7 @@ export default function PromoteStudentPage() {
         setError("");
 
         try {
-            const res = await fetch(`http://127.0.0.1:3000/students/${id}/promote`, {
+            const res = await fetch(`${API_BASE_URL}/students/${id}/promote`, {
                 method: "PATCH",
                 headers: {
                     "Content-Type": "application/json",

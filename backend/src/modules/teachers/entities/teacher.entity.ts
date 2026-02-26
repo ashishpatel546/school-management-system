@@ -13,6 +13,28 @@ export class Teacher {
     @JoinColumn()
     user: User;
 
+    // --- Teacher-specific optional fields ---
+
+    /**
+     * Auto-generated numeric employee code (e.g. 1001, 1002, ...). Unique, set by service on creation.
+     */
+    @Column({ nullable: true, unique: true })
+    employeeCode: number;
+
+    @Column({ nullable: true })
+    department: string;
+
+    @Column({ type: 'date', nullable: true })
+    joiningDate: string;
+
+    @Column({ type: 'date', nullable: true })
+    exitDate: string;
+
+    @Column({ nullable: true })
+    qualification: string;
+
+    // --- Relationships ---
+
     @OneToMany(() => Section, (section) => section.classTeacher, { nullable: true })
     classTeacherOf: Section[];
 

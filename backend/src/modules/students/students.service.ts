@@ -1,4 +1,4 @@
-import { Injectable } from '@nestjs/common';
+import { Injectable, BadRequestException } from '@nestjs/common';
 import { UserRole } from '../users/entities/user.entity';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
@@ -45,8 +45,30 @@ export class StudentsService {
             }
         }) as unknown as Student;
         if (createStudentDto.discountIds && createStudentDto.discountIds.length > 0) {
-            student.discounts = createStudentDto.discountIds.map((id: number) => ({ id } as any));
+            student.studentDiscounts = createStudentDto.discountIds.map((id: number) => ({ discountCategory: { id }, isActive: true } as any));
         }
+
+        // Validate sibling parent names match
+        if (createStudentDto.siblingId) {
+            const sibling = await this.studentsRepository.findOne({
+                where: { id: createStudentDto.siblingId },
+                relations: ['user'],
+            });
+            if (!sibling) {
+                throw new BadRequestException('Sibling student not found.');
+            }
+            const sibFather = (sibling.user?.fathersName || '').trim().toLowerCase();
+            const sibMother = (sibling.user?.mothersName || '').trim().toLowerCase();
+            const newFather = (createStudentDto.fathersName || '').trim().toLowerCase();
+            const newMother = (createStudentDto.mothersName || '').trim().toLowerCase();
+            if (sibFather !== newFather || sibMother !== newMother) {
+                throw new BadRequestException(
+                    `Sibling validation failed: Father's name and Mother's name must match the selected sibling's parent names (` +
+                    `Father: "${sibling.user?.fathersName}", Mother: "${sibling.user?.mothersName}").`
+                );
+            }
+        }
+
         student = await this.studentsRepository.save(student);
 
         // Fetch specific academic session if provided, else use active one
@@ -75,10 +97,11 @@ export class StudentsService {
         const qb = this.studentsRepository.createQueryBuilder('student')
             .leftJoinAndSelect('student.user', 'user')
             .leftJoinAndSelect('student.studentSubjects', 'studentSubjects')
-            .leftJoinAndSelect('studentSubjects.extraSubject', 'extraSubject')
+            .leftJoinAndSelect('studentSubjects.subject', 'subject')
             .leftJoinAndSelect('student.class', 'class')
             .leftJoinAndSelect('student.section', 'section')
-            .leftJoinAndSelect('student.discounts', 'discounts')
+            .leftJoinAndSelect('student.studentDiscounts', 'studentDiscounts')
+            .leftJoinAndSelect('studentDiscounts.discountCategory', 'discounts')
             .leftJoinAndSelect('student.enrollments', 'enrollments')
             .leftJoinAndSelect('enrollments.academicSession', 'academicSession')
             .leftJoinAndSelect('enrollments.class', 'enrollmentClass')
@@ -86,6 +109,13 @@ export class StudentsService {
 
         if (queryParams.id) {
             qb.andWhere('student.id = :id', { id: queryParams.id });
+        }
+        // Generic OR search across firstName and lastName (used by sibling modal)
+        if (queryParams.search) {
+            qb.andWhere(
+                '(LOWER(user.firstName) LIKE LOWER(:search) OR LOWER(user.lastName) LIKE LOWER(:search))',
+                { search: `%${queryParams.search}%` }
+            );
         }
         if (queryParams.firstName) {
             qb.andWhere('LOWER(user.firstName) LIKE LOWER(:firstName)', { firstName: `%${queryParams.firstName}%` });
@@ -107,10 +137,10 @@ export class StudentsService {
     }
 
     findOne(id: number) {
-        return this.studentsRepository.findOne({ where: { id }, relations: ['user', 'studentSubjects', 'studentSubjects.extraSubject', 'class', 'section', 'discounts', 'enrollments', 'enrollments.academicSession', 'enrollments.class', 'enrollments.section'] });
+        return this.studentsRepository.findOne({ where: { id }, relations: ['user', 'studentSubjects', 'studentSubjects.subject', 'class', 'section', 'studentDiscounts', 'studentDiscounts.discountCategory', 'enrollments', 'enrollments.academicSession', 'enrollments.class', 'enrollments.section'] });
     }
 
-    async enroll(studentId: number, classId: number, sectionId: number, extraSubjectIds: number[], academicSessionId?: number) {
+    async enroll(studentId: number, classId: number, sectionId: number, subjectIds: number[], academicSessionId?: number) {
         // Update student with class and section (legacy/cache link)
         await this.studentsRepository.update(studentId, {
             class: { id: classId },
@@ -144,24 +174,24 @@ export class StudentsService {
         // Create student subject relations
         const existingSubjects = await this.studentSubjectRepository.find({
             where: { student: { id: studentId } },
-            relations: ['extraSubject'],
+            relations: ['subject'],
         });
 
-        const existingSubjectIds = new Set(existingSubjects.map((s) => s.extraSubject.id));
+        const existingSubjectIds = new Set(existingSubjects.map((s) => s.subject.id));
 
         // Identify subjects to remove
-        const subjectsToRemove = existingSubjects.filter((s) => !extraSubjectIds.includes(s.extraSubject.id));
+        const subjectsToRemove = existingSubjects.filter((s) => !subjectIds.includes(s.subject.id));
         if (subjectsToRemove.length > 0) {
             await this.studentSubjectRepository.remove(subjectsToRemove);
         }
 
         // Identify subjects to add
-        const newSubjectIds = extraSubjectIds.filter((id) => !existingSubjectIds.has(id));
+        const newSubjectIds = subjectIds.filter((id) => !existingSubjectIds.has(id));
 
         const promises = newSubjectIds.map((subjectId) => {
             const studentSubject = this.studentSubjectRepository.create({
                 student: { id: studentId },
-                extraSubject: { id: subjectId },
+                subject: { id: subjectId },
             });
             return this.studentSubjectRepository.save(studentSubject);
         });
@@ -230,7 +260,7 @@ export class StudentsService {
     }
 
     async update(id: number, updateData: any) {
-        const student = await this.studentsRepository.findOne({ where: { id }, relations: ['discounts', 'user'] });
+        const student = await this.studentsRepository.findOne({ where: { id }, relations: ['studentDiscounts', 'studentDiscounts.discountCategory', 'user'] });
         if (!student) throw new Error('Student not found');
 
         if (!student.user) student.user = {} as any;
@@ -250,10 +280,55 @@ export class StudentsService {
         if (updateData.bloodGroup !== undefined) student.user.bloodGroup = updateData.bloodGroup;
         if (updateData.dateOfBirth !== undefined) student.user.dateOfBirth = updateData.dateOfBirth;
 
-        if (updateData.siblingId !== undefined) student.siblingId = updateData.siblingId;
+        if (updateData.siblingId !== undefined) {
+            if (updateData.siblingId) {
+                // Validate sibling parent names match
+                const sibling = await this.studentsRepository.findOne({
+                    where: { id: updateData.siblingId },
+                    relations: ['user'],
+                });
+                if (!sibling) {
+                    throw new BadRequestException('Sibling student not found.');
+                }
+                const sibFather = (sibling.user?.fathersName || '').trim().toLowerCase();
+                const sibMother = (sibling.user?.mothersName || '').trim().toLowerCase();
+                const updFather = (updateData.fathersName !== undefined ? updateData.fathersName : student.user?.fathersName || '').trim().toLowerCase();
+                const updMother = (updateData.mothersName !== undefined ? updateData.mothersName : student.user?.mothersName || '').trim().toLowerCase();
+                if (sibFather !== updFather || sibMother !== updMother) {
+                    throw new BadRequestException(
+                        `Sibling validation failed: Father's name and Mother's name must match the selected sibling's parent names (` +
+                        `Father: "${sibling.user?.fathersName}", Mother: "${sibling.user?.mothersName}").`
+                    );
+                }
+            }
+            student.siblingId = updateData.siblingId;
+        }
 
         if (updateData.discountIds !== undefined) {
-            student.discounts = updateData.discountIds.map((dId: number) => ({ id: dId } as any));
+            const incomingIds = updateData.discountIds;
+            const currentStudentDiscounts = student.studentDiscounts || [];
+
+            // For each existing, if not in incoming, set isActive to false
+            for (const sd of currentStudentDiscounts) {
+                if (!incomingIds.includes(sd.discountCategory.id)) {
+                    sd.isActive = false;
+                } else {
+                    sd.isActive = true;
+                }
+            }
+
+            // For each incoming, if not in existing, add new with isActive true
+            const existingIds = currentStudentDiscounts.map(sd => sd.discountCategory.id);
+            const newIds = incomingIds.filter((id: number) => !existingIds.includes(id));
+
+            for (const newId of newIds) {
+                currentStudentDiscounts.push({
+                    discountCategory: { id: newId },
+                    isActive: true
+                } as any);
+            }
+
+            student.studentDiscounts = currentStudentDiscounts;
         }
 
         return this.studentsRepository.save(student);

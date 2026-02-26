@@ -9,8 +9,8 @@ export enum SubjectCategory {
     ACTIVITY = 'ACTIVITY'
 }
 
-@Entity()
-export class ExtraSubject {
+@Entity('subject')
+export class Subject {
     @PrimaryGeneratedColumn()
     id: number;
 
@@ -28,6 +28,6 @@ export class ExtraSubject {
     @JoinColumn()
     feeCategory: FeeCategory;
 
-    @OneToMany(() => StudentSubject, (studentSubject) => studentSubject.extraSubject)
+    @OneToMany(() => StudentSubject, (studentSubject) => studentSubject.subject)
     studentSubjects: StudentSubject[];
 }

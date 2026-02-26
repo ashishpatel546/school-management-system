@@ -3,6 +3,7 @@
 import { useState, useEffect } from "react";
 import { toast } from "react-hot-toast";
 import { useRouter } from "next/navigation";
+import { API_BASE_URL } from "@/lib/api";
 
 export default function BulkPromotionsPage() {
     const router = useRouter();
@@ -30,9 +31,9 @@ export default function BulkPromotionsPage() {
     const fetchData = async () => {
         try {
             const [sessRes, classRes, secRes] = await Promise.all([
-                fetch("http://localhost:3000/academic-sessions"),
-                fetch("http://localhost:3000/classes"),
-                fetch("http://localhost:3000/sections"),
+                fetch(`${API_BASE_URL}/academic-sessions`),
+                fetch(`${API_BASE_URL}/classes`),
+                fetch(`${API_BASE_URL}/sections`),
             ]);
 
             if (sessRes.ok) setSessions(await sessRes.json());
@@ -53,7 +54,7 @@ export default function BulkPromotionsPage() {
         try {
             // Ideally we'd have a specific endpoint, but for now we fetch all and filter client-side for speed
             // Or we just fetch all students and find those who have an active enrollment matching fromSession & fromClass
-            const res = await fetch("http://localhost:3000/students");
+            const res = await fetch(`${API_BASE_URL}/students`);
             if (res.ok) {
                 const allStudents = await res.json();
                 const filtered = allStudents.filter((s: any) => {
@@ -114,7 +115,7 @@ export default function BulkPromotionsPage() {
 
         try {
             setLoading(true);
-            const res = await fetch("http://localhost:3000/students/promotions/bulk", {
+            const res = await fetch(`${API_BASE_URL}/students/promotions/bulk`, {
                 method: "POST",
                 headers: { "Content-Type": "application/json" },
                 body: JSON.stringify(payload)

@@ -25,6 +25,21 @@ export class FeePayment {
     @Column('decimal', { precision: 10, scale: 2 })
     amountPaid: number;
 
+    @Column({ nullable: true })
+    discountNames: string;
+
+    @Column('decimal', { precision: 10, scale: 2, default: 0 })
+    discountAmount: number;
+
+    @Column('decimal', { precision: 10, scale: 2, default: 0 })
+    baseFeeAmount: number;
+
+    @Column('decimal', { precision: 10, scale: 2, default: 0 })
+    otherFeeAmount: number;
+
+    @Column({ type: 'jsonb', nullable: true })
+    feeBreakdown: any;
+
     @CreateDateColumn()
     paymentDate: Date;
 

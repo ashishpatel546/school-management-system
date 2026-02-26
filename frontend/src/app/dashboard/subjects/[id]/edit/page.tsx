@@ -3,6 +3,7 @@
 import { useState, useEffect } from "react";
 import { useParams, useRouter } from "next/navigation";
 import Link from "next/link";
+import { API_BASE_URL } from "@/lib/api";
 
 export default function EditSubjectPage() {
     const router = useRouter();
@@ -20,7 +21,7 @@ export default function EditSubjectPage() {
 
     useEffect(() => {
         // Fetch fee categories
-        fetch('http://localhost:3000/fees/categories')
+        fetch(`${API_BASE_URL}/fees/categories`)
             .then(res => res.json())
             .then(data => setFeeCategories(data))
             .catch(err => console.error("Failed to fetch fee categories", err));
@@ -28,7 +29,7 @@ export default function EditSubjectPage() {
         if (!id) return;
         const fetchSubject = async () => {
             try {
-                const res = await fetch(`http://127.0.0.1:3000/extra-subjects`); // Ideally fetch single subject
+                const res = await fetch(`${API_BASE_URL}/subjects`); // Ideally fetch single subject
                 if (!res.ok) throw new Error("Failed to fetch subjects");
                 const subjects = await res.json();
                 const subject = subjects.find((s: any) => s.id === parseInt(id));
@@ -67,9 +68,11 @@ export default function EditSubjectPage() {
             };
             if (formData.feeCategoryId) {
                 payload.feeCategoryId = parseInt(formData.feeCategoryId);
+            } else {
+                payload.feeCategoryId = null;
             }
 
-            const res = await fetch(`http://127.0.0.1:3000/extra-subjects/${id}`, {
+            const res = await fetch(`${API_BASE_URL}/subjects/${id}`, {
                 method: "PATCH",
                 headers: {
                     "Content-Type": "application/json",
@@ -78,7 +81,8 @@ export default function EditSubjectPage() {
             });
 
             if (!res.ok) {
-                throw new Error("Failed to update subject");
+                const errData = await res.json().catch(() => ({}));
+                throw new Error(errData.message || "Failed to update subject");
             }
 
             router.push("/dashboard/subjects");

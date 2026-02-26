@@ -3,23 +3,18 @@
 import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
+import useSWR from "swr";
+import { fetcher, API_BASE_URL } from "@/lib/api";
 
 export default function AddSubjectPage() {
     const router = useRouter();
     const [name, setName] = useState("");
     const [subjectCategory, setSubjectCategory] = useState("BASE");
     const [feeCategoryId, setFeeCategoryId] = useState("");
-    const [feeCategories, setFeeCategories] = useState<any[]>([]);
+    const { data: feeCategories = [] } = useSWR('/fees/categories', fetcher);
 
     const [loading, setLoading] = useState(false);
     const [error, setError] = useState("");
-
-    useEffect(() => {
-        fetch('http://localhost:3000/fees/categories')
-            .then(res => res.json())
-            .then(data => setFeeCategories(data))
-            .catch(err => console.error("Failed to fetch fee categories", err));
-    }, []);
 
     const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault();
@@ -27,7 +22,7 @@ export default function AddSubjectPage() {
         setError("");
 
         try {
-            const res = await fetch("http://localhost:3000/extra-subjects", {
+            const res = await fetch(`${API_BASE_URL}/subjects`, {
                 method: "POST",
                 headers: {
                     "Content-Type": "application/json",
@@ -100,7 +95,7 @@ export default function AddSubjectPage() {
                                 className="bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-lg focus:ring-blue-500 focus:border-blue-500 block w-full p-2.5"
                             >
                                 <option value="">-- None (Implicit) --</option>
-                                {feeCategories.map(c => (
+                                {feeCategories.map((c: any) => (
                                     <option key={c.id} value={c.id}>{c.name}</option>
                                 ))}
                             </select>

@@ -1,4 +1,4 @@
-import { Controller, Get, Post, Body, Param, ParseIntPipe, Patch, Query } from '@nestjs/common';
+import { Controller, Get, Post, Body, Param, ParseIntPipe, Patch, Query, Delete } from '@nestjs/common';
 import { TeachersService } from './teachers.service';
 import { CreateTeacherDto } from './dto/create-teacher.dto';
 import { AssignSubjectDto } from './dto/assign-subject.dto';
@@ -37,6 +37,14 @@ export class TeachersController {
     @Post(':id/assign-subject')
     assignSubject(@Param('id', ParseIntPipe) id: number, @Body() dto: AssignSubjectDto) {
         return this.teachersService.assignSubject(id, dto);
+    }
+
+    @Delete(':teacherId/assignments/:assignmentId')
+    unassignSubject(
+        @Param('teacherId', ParseIntPipe) teacherId: number,
+        @Param('assignmentId', ParseIntPipe) assignmentId: number,
+    ) {
+        return this.teachersService.unassignSubject(assignmentId);
     }
 
     @Patch(':id')

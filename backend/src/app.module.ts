@@ -6,7 +6,7 @@ import { AppController } from './app.controller';
 import { AppService } from './app.service';
 import { validate } from './common/config/env.validation';
 import { StudentsModule } from './modules/students/students.module';
-import { ExtraSubjectsModule } from './modules/extra-subjects/extra-subjects.module';
+import { SubjectsModule } from './modules/subjects/subjects.module';
 import { UsersModule } from './modules/users/users.module';
 import { ClassesModule } from './modules/classes/classes.module';
 import { TeachersModule } from './modules/teachers/teachers.module';
@@ -28,7 +28,7 @@ import { StudentEnrollment } from './modules/student-enrollments/entities/studen
     DatabaseModule,
     TypeOrmModule.forFeature([Student, AcademicSession, StudentEnrollment]),
     StudentsModule,
-    ExtraSubjectsModule,
+    SubjectsModule,
     UsersModule,
     ClassesModule,
     TeachersModule,

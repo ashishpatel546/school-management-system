@@ -3,6 +3,7 @@
 import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
+import { API_BASE_URL } from "@/lib/api";
 
 export default function AddTeacherPage() {
     const router = useRouter();
@@ -37,8 +38,8 @@ export default function AddTeacherPage() {
         const fetchSetupData = async () => {
             try {
                 const [classesRes, subjectsRes] = await Promise.all([
-                    fetch(`http://127.0.0.1:3000/classes`),
-                    fetch(`http://127.0.0.1:3000/extra-subjects`)
+                    fetch(`${API_BASE_URL}/classes`),
+                    fetch(`${API_BASE_URL}/subjects`)
                 ]);
                 if (classesRes.ok) setClasses(await classesRes.json());
                 if (subjectsRes.ok) setSubjects(await subjectsRes.json());
@@ -88,7 +89,7 @@ export default function AddTeacherPage() {
         setError("");
 
         try {
-            const res = await fetch("http://localhost:3000/teachers", {
+            const res = await fetch(`${API_BASE_URL}/teachers`, {
                 method: "POST",
                 headers: { "Content-Type": "application/json" },
                 body: JSON.stringify(formData),
@@ -102,7 +103,7 @@ export default function AddTeacherPage() {
             const newTeacher = await res.json();
 
             for (const assignment of pendingAssignments) {
-                await fetch(`http://127.0.0.1:3000/teachers/${newTeacher.id}/assign-subject`, {
+                await fetch(`${API_BASE_URL}/teachers/${newTeacher.id}/assign-subject`, {
                     method: "POST",
                     headers: { "Content-Type": "application/json" },
                     body: JSON.stringify({

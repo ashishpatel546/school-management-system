@@ -2,7 +2,9 @@
 
 import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
+import toast, { Toaster } from "react-hot-toast";
 import Table from "../../../components/Table";
+import { API_BASE_URL } from "@/lib/api";
 
 export default function EnrollmentPage() {
     const router = useRouter();
@@ -31,16 +33,17 @@ export default function EnrollmentPage() {
     const [searchLoading, setSearchLoading] = useState(false);
     const [error, setError] = useState("");
     const [success, setSuccess] = useState("");
+    const [showEditModal, setShowEditModal] = useState(false);
 
     // Initial Fetch
     useEffect(() => {
         const fetchData = async () => {
             try {
                 const [studentsRes, subjectsRes, classesRes, sessionsRes] = await Promise.all([
-                    fetch("http://127.0.0.1:3000/students"),
-                    fetch("http://127.0.0.1:3000/extra-subjects"),
-                    fetch("http://127.0.0.1:3000/classes"),
-                    fetch("http://127.0.0.1:3000/academic-sessions")
+                    fetch(`${API_BASE_URL}/students`),
+                    fetch(`${API_BASE_URL}/subjects`),
+                    fetch(`${API_BASE_URL}/classes`),
+                    fetch(`${API_BASE_URL}/academic-sessions`)
                 ]);
 
                 if (studentsRes.ok) {
@@ -91,10 +94,10 @@ export default function EnrollmentPage() {
             if (searchTerm) {
                 const lower = searchTerm.toLowerCase();
                 filtered = filtered.filter((s: any) =>
-                    s.id.toString().includes(lower) ||
-                    s.firstName.toLowerCase().includes(lower) ||
-                    s.lastName.toLowerCase().includes(lower) ||
-                    s.email.toLowerCase().includes(lower)
+                    (s.id?.toString() || "").includes(lower) ||
+                    (s.firstName?.toLowerCase() || "").includes(lower) ||
+                    (s.lastName?.toLowerCase() || "").includes(lower) ||
+                    (s.email?.toLowerCase() || "").includes(lower)
                 );
             }
             setFilteredStudents(filtered);
@@ -114,7 +117,7 @@ export default function EnrollmentPage() {
 
         const fetchStudentDetails = async () => {
             try {
-                const res = await fetch(`http://127.0.0.1:3000/students/${selectedStudent}`);
+                const res = await fetch(`${API_BASE_URL}/students/${selectedStudent}`);
                 if (res.ok) {
                     const data = await res.json();
                     setStudentData(data);
@@ -124,7 +127,7 @@ export default function EnrollmentPage() {
 
                     // Pre-fill subjects (map to string IDs)
                     if (data.studentSubjects) {
-                        setSelectedSubjects(data.studentSubjects.map((ss: any) => ss.extraSubject.id.toString()));
+                        setSelectedSubjects(data.studentSubjects.map((ss: any) => (ss.subject || ss.extraSubject).id.toString()));
                     }
                 }
             } catch (err) {
@@ -169,7 +172,7 @@ export default function EnrollmentPage() {
         }
 
         try {
-            const res = await fetch(`http://127.0.0.1:3000/students/${selectedStudent}/enroll`, {
+            const res = await fetch(`${API_BASE_URL}/students/${selectedStudent}/enroll`, {
                 method: "POST",
                 headers: {
                     "Content-Type": "application/json",
@@ -186,12 +189,22 @@ export default function EnrollmentPage() {
                 throw new Error("Failed to enroll student");
             }
 
-            setSuccess("Student enrollment updated successfully!");
-            // Refresh student data
-            const updatedRes = await fetch(`http://127.0.0.1:3000/students/${selectedStudent}`);
-            if (updatedRes.ok) setStudentData(await updatedRes.json());
+            toast.success("Student enrollment updated successfully!");
+            setShowEditModal(false);
+            // Refresh the students list from server to reflect new enrollment
+            const refreshRes = await fetch(`${API_BASE_URL}/students`);
+            if (refreshRes.ok) {
+                const refreshedStudents = await refreshRes.json();
+                setStudents(refreshedStudents);
 
-            // Optionally refresh the student list from server if needed, but we have local state
+                // Update the filtered list which feeds the visible table
+                setFilteredStudents(prevFiltered => {
+                    return prevFiltered.map(fs => {
+                        const updated = refreshedStudents.find((rs: any) => rs.id === fs.id);
+                        return updated ? updated : fs;
+                    });
+                });
+            }
 
         } catch (err) {
             setError("Failed to enroll student. Please try again.");
@@ -211,7 +224,7 @@ export default function EnrollmentPage() {
                     {s.studentSubjects?.length > 0
                         ? s.studentSubjects.map((ss: any) => (
                             <span key={ss.id} className="bg-blue-100 text-blue-800 text-xs font-medium px-2 py-0.5 rounded">
-                                {ss.extraSubject.name}
+                                {(ss.subject || ss.extraSubject)?.name}
                             </span>
                         ))
                         : <span className="text-gray-400 italic">None</span>
@@ -225,8 +238,7 @@ export default function EnrollmentPage() {
                 <button
                     onClick={() => {
                         setSelectedStudent(s.id.toString());
-                        // Scroll to form
-                        document.getElementById('enrollment-form')?.scrollIntoView({ behavior: 'smooth' });
+                        setShowEditModal(true);
                     }}
                     className="font-medium text-blue-600 hover:underline"
                 >
@@ -238,6 +250,7 @@ export default function EnrollmentPage() {
 
     return (
         <main className="p-4 bg-slate-50 min-h-screen">
+            <Toaster position="top-right" />
             <div className="max-w-6xl mx-auto">
                 <div className="bg-white p-8 rounded-lg shadow-sm border border-slate-200 mb-6">
                     <h2 className="text-2xl font-bold mb-6 text-slate-800">Enrollment Management</h2>
@@ -306,122 +319,130 @@ export default function EnrollmentPage() {
                         />
                     </div>
 
-                    {/* Enrollment Form */}
-                    {selectedStudent && studentData && (
-                        <div id="enrollment-form" className="mb-8 border-t pt-8">
-                            <h3 className="text-xl font-bold mb-6 text-slate-800">
-                                Edit Enrollment: <span className="text-blue-600">[#{studentData.id}] {studentData.firstName} {studentData.lastName}</span>
-                            </h3>
+                    {/* Enrollment Form Modal */}
+                    {showEditModal && selectedStudent && studentData && (
+                        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-50">
+                            <div className="bg-white p-8 rounded-lg shadow-xl w-full max-w-4xl max-h-[90vh] overflow-y-auto w-[800px]">
+                                <h3 className="text-xl font-bold mb-6 text-slate-800">
+                                    Edit Enrollment: <span className="text-blue-600">[#{studentData.id}] {studentData.firstName} {studentData.lastName}</span>
+                                </h3>
 
-                            {error && <div className="p-4 mb-4 text-sm text-red-800 rounded-lg bg-red-50">{error}</div>}
-                            {success && <div className="p-4 mb-4 text-sm text-green-800 rounded-lg bg-green-50">{success}</div>}
+                                {error && <div className="p-4 mb-4 text-sm text-red-800 rounded-lg bg-red-50">{error}</div>}
 
-                            <form onSubmit={handleSubmit}>
-                                {!studentData.class ? (
-                                    <div className="grid gap-6 mb-6 md:grid-cols-3">
-                                        <div>
-                                            <label htmlFor="class" className="block mb-2 text-sm font-medium text-gray-900">Class</label>
-                                            <select
-                                                id="class"
-                                                value={selectedClass}
-                                                onChange={(e) => setSelectedClass(e.target.value)}
-                                                className="bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-lg focus:ring-blue-500 focus:border-blue-500 block w-full p-2.5"
-                                                required
-                                            >
-                                                <option value="">Choose a class</option>
-                                                {classes.map((cls: any) => (
-                                                    <option key={cls.id} value={cls.id}>
-                                                        {cls.name}
-                                                    </option>
-                                                ))}
-                                            </select>
-                                        </div>
-                                        <div>
-                                            <label htmlFor="section" className="block mb-2 text-sm font-medium text-gray-900">Section</label>
-                                            <select
-                                                id="section"
-                                                value={selectedSection}
-                                                onChange={(e) => setSelectedSection(e.target.value)}
-                                                className="bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-lg focus:ring-blue-500 focus:border-blue-500 block w-full p-2.5"
-                                                required
-                                                disabled={!selectedClass}
-                                            >
-                                                <option value="">Choose a section</option>
-                                                {sections.map((section: any) => (
-                                                    <option key={section.id} value={section.id}>
-                                                        {section.name}
-                                                    </option>
-                                                ))}
-                                            </select>
-                                        </div>
-                                        <div>
-                                            <label htmlFor="session" className="block mb-2 text-sm font-medium text-gray-900">Academic Session</label>
-                                            <select
-                                                id="session"
-                                                value={selectedSessionId}
-                                                onChange={(e) => setSelectedSessionId(e.target.value === "" ? "" : Number(e.target.value))}
-                                                className="bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-lg focus:ring-blue-500 focus:border-blue-500 block w-full p-2.5"
-                                                required
-                                            >
-                                                <option value="">Choose a session</option>
-                                                {academicSessions.map((session: any) => (
-                                                    <option key={session.id} value={session.id}>
-                                                        {session.name} {session.isActive ? '(Current)' : ''}
-                                                    </option>
-                                                ))}
-                                            </select>
-                                        </div>
-                                    </div>
-                                ) : (
-                                    <div className="mb-6 p-4 bg-yellow-50 border border-yellow-200 rounded-lg">
-                                        <div className="flex gap-8">
+                                <form onSubmit={handleSubmit}>
+                                    {!studentData.class ? (
+                                        <div className="grid gap-6 mb-6 md:grid-cols-3">
                                             <div>
-                                                <span className="block text-xs font-bold text-gray-500 uppercase">Class</span>
-                                                <span className="text-gray-900 font-medium">{studentData.class.name}</span>
+                                                <label htmlFor="class" className="block mb-2 text-sm font-medium text-gray-900">Class</label>
+                                                <select
+                                                    id="class"
+                                                    value={selectedClass}
+                                                    onChange={(e) => setSelectedClass(e.target.value)}
+                                                    className="bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-lg focus:ring-blue-500 focus:border-blue-500 block w-full p-2.5"
+                                                    required
+                                                >
+                                                    <option value="">Choose a class</option>
+                                                    {classes.map((cls: any) => (
+                                                        <option key={cls.id} value={cls.id}>
+                                                            {cls.name}
+                                                        </option>
+                                                    ))}
+                                                </select>
                                             </div>
                                             <div>
-                                                <span className="block text-xs font-bold text-gray-500 uppercase">Section</span>
-                                                <span className="text-gray-900 font-medium">{studentData.section.name}</span>
+                                                <label htmlFor="section" className="block mb-2 text-sm font-medium text-gray-900">Section</label>
+                                                <select
+                                                    id="section"
+                                                    value={selectedSection}
+                                                    onChange={(e) => setSelectedSection(e.target.value)}
+                                                    className="bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-lg focus:ring-blue-500 focus:border-blue-500 block w-full p-2.5"
+                                                    required
+                                                    disabled={!selectedClass}
+                                                >
+                                                    <option value="">Choose a section</option>
+                                                    {sections.map((section: any) => (
+                                                        <option key={section.id} value={section.id}>
+                                                            {section.name}
+                                                        </option>
+                                                    ))}
+                                                </select>
+                                            </div>
+                                            <div>
+                                                <label htmlFor="session" className="block mb-2 text-sm font-medium text-gray-900">Academic Session</label>
+                                                <select
+                                                    id="session"
+                                                    value={selectedSessionId}
+                                                    onChange={(e) => setSelectedSessionId(e.target.value === "" ? "" : Number(e.target.value))}
+                                                    className="bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-lg focus:ring-blue-500 focus:border-blue-500 block w-full p-2.5"
+                                                    required
+                                                >
+                                                    <option value="">Choose a session</option>
+                                                    {academicSessions.map((session: any) => (
+                                                        <option key={session.id} value={session.id}>
+                                                            {session.name} {session.isActive ? '(Current)' : ''}
+                                                        </option>
+                                                    ))}
+                                                </select>
                                             </div>
                                         </div>
-                                        <p className="mt-2 text-xs text-yellow-700">
-                                            Class and Section cannot be changed here. Use the "Promote Student" page to change classes.
-                                        </p>
-                                    </div>
-                                )}
-
-                                <div className="mb-6">
-                                    <label className="block mb-2 text-sm font-medium text-gray-900">Subjects</label>
-                                    <div className="grid grid-cols-2 md:grid-cols-4 gap-4 bg-gray-50 p-6 rounded-lg border border-gray-200">
-                                        {subjects.map((subject: any) => (
-                                            <div key={subject.id} className="flex items-center">
-                                                <input
-                                                    id={`subject-${subject.id}`}
-                                                    type="checkbox"
-                                                    value={subject.id}
-                                                    checked={selectedSubjects.includes(subject.id.toString())}
-                                                    onChange={() => handleSubjectToggle(subject.id.toString())}
-                                                    className="w-4 h-4 text-blue-600 bg-gray-100 border-gray-300 rounded focus:ring-blue-500 focus:ring-2 cursor-pointer"
-                                                />
-                                                <label htmlFor={`subject-${subject.id}`} className="ml-2 text-sm font-medium text-gray-900 cursor-pointer select-none">
-                                                    {subject.name}
-                                                </label>
+                                    ) : (
+                                        <div className="mb-6 p-4 bg-yellow-50 border border-yellow-200 rounded-lg">
+                                            <div className="flex gap-8">
+                                                <div>
+                                                    <span className="block text-xs font-bold text-gray-500 uppercase">Class</span>
+                                                    <span className="text-gray-900 font-medium">{studentData.class.name}</span>
+                                                </div>
+                                                <div>
+                                                    <span className="block text-xs font-bold text-gray-500 uppercase">Section</span>
+                                                    <span className="text-gray-900 font-medium">{studentData.section.name}</span>
+                                                </div>
                                             </div>
-                                        ))}
-                                    </div>
-                                    <p className="mt-2 text-sm text-gray-500">Select all subjects that apply.</p>
-                                </div>
+                                            <p className="mt-2 text-xs text-yellow-700">
+                                                Class and Section cannot be changed here. Use the "Promote Student" page to change classes.
+                                            </p>
+                                        </div>
+                                    )}
 
-                                <div className="flex items-center space-x-4">
-                                    <button
-                                        type="submit"
-                                        disabled={loading}
-                                        className="text-white bg-blue-700 hover:bg-blue-800 focus:ring-4 focus:outline-none focus:ring-blue-300 font-medium rounded-lg text-sm w-full sm:w-auto px-5 py-2.5 text-center disabled:opacity-50"
-                                    >
-                                        {loading ? 'Saving Enrollment...' : 'Update Enrollment'}
-                                    </button>
-                                </div>
-                            </form>
+                                    <div className="mb-6">
+                                        <label className="block mb-2 text-sm font-medium text-gray-900">Subjects</label>
+                                        <div className="grid grid-cols-2 md:grid-cols-4 gap-4 bg-gray-50 p-6 rounded-lg border border-gray-200">
+                                            {subjects.map((subject: any) => (
+                                                <div key={subject.id} className="flex items-center">
+                                                    <input
+                                                        id={`subject-${subject.id}`}
+                                                        type="checkbox"
+                                                        value={subject.id}
+                                                        checked={selectedSubjects.includes(subject.id.toString())}
+                                                        onChange={() => handleSubjectToggle(subject.id.toString())}
+                                                        className="w-4 h-4 text-blue-600 bg-gray-100 border-gray-300 rounded focus:ring-blue-500 focus:ring-2 cursor-pointer"
+                                                    />
+                                                    <label htmlFor={`subject-${subject.id}`} className="ml-2 text-sm font-medium text-gray-900 cursor-pointer select-none">
+                                                        {subject.name}
+                                                    </label>
+                                                </div>
+                                            ))}
+                                        </div>
+                                        <p className="mt-2 text-sm text-gray-500">Select all subjects that apply.</p>
+                                    </div>
+
+                                    <div className="flex items-center justify-end space-x-4 border-t pt-4">
+                                        <button
+                                            type="button"
+                                            onClick={() => setShowEditModal(false)}
+                                            className="px-4 py-2 border border-gray-300 rounded text-gray-700 hover:bg-gray-50 transition-colors"
+                                        >
+                                            Cancel
+                                        </button>
+                                        <button
+                                            type="submit"
+                                            disabled={loading}
+                                            className="text-white bg-blue-700 hover:bg-blue-800 focus:ring-4 focus:outline-none focus:ring-blue-300 font-medium rounded-lg text-sm w-full sm:w-auto px-5 py-2.5 text-center disabled:opacity-50"
+                                        >
+                                            {loading ? 'Saving Enrollment...' : 'Update Enrollment'}
+                                        </button>
+                                    </div>
+                                </form>
+                            </div>
                         </div>
                     )}
                 </div>

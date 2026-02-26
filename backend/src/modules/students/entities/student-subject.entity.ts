@@ -1,6 +1,6 @@
 import { Entity, PrimaryGeneratedColumn, ManyToOne, JoinColumn } from 'typeorm';
 import { Student } from './student.entity';
-import { ExtraSubject } from '../../extra-subjects/entities/extra-subject.entity';
+import { Subject } from '../../subjects/entities/subject.entity';
 
 @Entity()
 export class StudentSubject {
@@ -11,7 +11,7 @@ export class StudentSubject {
     @JoinColumn({ name: 'studentId' })
     student: Student;
 
-    @ManyToOne(() => ExtraSubject, (extraSubject) => extraSubject.studentSubjects)
+    @ManyToOne(() => Subject, (subject) => subject.studentSubjects)
     @JoinColumn({ name: 'extraSubjectId' })
-    extraSubject: ExtraSubject;
+    subject: Subject;
 }

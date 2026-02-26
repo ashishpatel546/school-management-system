@@ -1,0 +1,15 @@
+step to start with application:
+1. Go to setting page: Create session and make it active.
+2. Go to fee section -> Fee Setup(admin):
+	1) Create fee structure.
+	2) Create fee category.
+    3) Assign fee category to fee structure. (but after creating the class)
+	4) Create fee discount.
+3. Create Classes and sections using class section page. Class teacher can be added later on by editing the class.
+4. Add subjects using subjects page.
+5. Assign fee structure to class using fee structure page.
+6. Add Teachers using teachers page.
+7. Assign Teachers to class using class section page.
+8. Add Students using students page.
+9. Assign Students to class using class section page.
+10. Enrollment

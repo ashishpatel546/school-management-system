@@ -2,7 +2,8 @@ import Link from "next/link";
 
 async function getStats() {
     try {
-        const res = await fetch('http://localhost:3000/dashboard/stats', { cache: 'no-store' });
+        const url = process.env.NEXT_PUBLIC_API_URL || "http://localhost:3000";
+        const res = await fetch(`${url}/dashboard/stats`, { cache: 'no-store' });
         if (!res.ok) return { students: 0, teachers: 0, classes: 0 };
         return res.json();
     } catch (error) {

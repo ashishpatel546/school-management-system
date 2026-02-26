@@ -10,9 +10,10 @@ import { GlobalFeeSettings } from './entities/global-fee-settings.entity';
 import { Class } from '../classes/entities/class.entity';
 import { Student } from '../students/entities/student.entity';
 import { StudentEnrollment } from '../student-enrollments/entities/student-enrollment.entity';
+import { StudentDiscount } from './entities/student-discount.entity';
 
 @Module({
-    imports: [TypeOrmModule.forFeature([FeeCategory, FeeStructure, FeePayment, DiscountCategory, GlobalFeeSettings, Class, Student, StudentEnrollment])],
+    imports: [TypeOrmModule.forFeature([FeeCategory, FeeStructure, FeePayment, DiscountCategory, GlobalFeeSettings, Class, Student, StudentEnrollment, StudentDiscount])],
     controllers: [FeesController],
     providers: [FeesService],
     exports: [FeesService],

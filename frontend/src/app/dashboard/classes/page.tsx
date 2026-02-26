@@ -3,52 +3,44 @@
 import { useState, useEffect } from "react";
 import Link from "next/link";
 import Table from "../../../components/Table";
+import useSWR from "swr";
+import { fetcher } from "@/lib/api";
+import { Loader } from "@/components/ui/Loader";
 
 export default function ClassesPage() {
-    const [classes, setClasses] = useState<any[]>([]);
-    const [loading, setLoading] = useState(true);
+    const { data, error, isLoading } = useSWR('/classes', fetcher);
     const [tableData, setTableData] = useState<any[]>([]);
 
     useEffect(() => {
-        const fetchClasses = async () => {
-            try {
-                const res = await fetch("http://localhost:3000/classes");
-                if (res.ok) {
-                    const data = await res.json();
-                    setClasses(data);
+        if (data) {
+            // Flatten data for table: One row per section
+            const flattened = data.flatMap((cls: any) =>
+                (cls.sections && cls.sections.length > 0)
+                    ? cls.sections.map((sec: any) => ({
+                        id: sec.id,
+                        className: cls.name, // "Class 10"
+                        sectionName: sec.name, // "A"
+                        classTeacher: sec.classTeacher?.user
+                            ? `${sec.classTeacher.user.firstName} ${sec.classTeacher.user.lastName}`
+                            : '',
+                        studentCount: sec.students ? sec.students.length : 0,
+                        classId: cls.id // For editing link
+                    }))
+                    : [{ // Handle class with no sections if any
+                        id: `cls-${cls.id}`,
+                        className: cls.name,
+                        sectionName: 'No Sections',
+                        classTeacher: '',
+                        studentCount: 0,
+                        classId: cls.id
+                    }]
+            );
+            setTableData(flattened);
+        }
+    }, [data]);
 
-                    // Flatten data for table: One row per section
-                    const flattened = data.flatMap((cls: any) =>
-                        (cls.sections && cls.sections.length > 0)
-                            ? cls.sections.map((sec: any) => ({
-                                id: sec.id,
-                                className: cls.name, // "Class 10"
-                                sectionName: sec.name, // "A"
-                                classTeacher: sec.classTeacher?.user
-                                    ? `${sec.classTeacher.user.firstName} ${sec.classTeacher.user.lastName}`
-                                    : '',
-                                studentCount: sec.students ? sec.students.length : 0,
-                                classId: cls.id // For editing link
-                            }))
-                            : [{ // Handle class with no sections if any
-                                id: `cls-${cls.id}`,
-                                className: cls.name,
-                                sectionName: 'No Sections',
-                                classTeacher: '',
-                                studentCount: 0,
-                                classId: cls.id
-                            }]
-                    );
-                    setTableData(flattened);
-                }
-            } catch (err) {
-                console.error("Failed to fetch classes", err);
-            } finally {
-                setLoading(false);
-            }
-        };
-        fetchClasses();
-    }, []);
+    if (isLoading) return <Loader fullScreen text="Loading classes..." />;
+    if (error) return <div className="p-4 text-red-500">Failed to load classes</div>;
 
     const columns = [
         { header: "Class", accessor: "className", sortable: true },
@@ -84,7 +76,7 @@ export default function ClassesPage() {
                     <Table
                         columns={columns}
                         data={tableData}
-                        loading={loading}
+                        loading={false}
                         defaultSortColumn="className"
                         emptyMessage="No classes found."
                     />

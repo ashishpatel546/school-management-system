@@ -3,6 +3,7 @@
 import { useState, useEffect } from "react";
 import { useParams, useRouter } from "next/navigation";
 import Link from "next/link";
+import { API_BASE_URL } from "@/lib/api";
 
 export default function EditTeacherPage() {
     const router = useRouter();
@@ -31,6 +32,7 @@ export default function EditTeacherPage() {
     const [selectedSection, setSelectedSection] = useState("");
     const [selectedSubject, setSelectedSubject] = useState("");
     const [assignLoading, setAssignLoading] = useState(false);
+    const [assignError, setAssignError] = useState("");
 
     const [loading, setLoading] = useState(true);
     const [saving, setSaving] = useState(false);
@@ -39,9 +41,9 @@ export default function EditTeacherPage() {
     const fetchTeacherDetails = async () => {
         try {
             const [teachersRes, classesRes, subjectsRes] = await Promise.all([
-                fetch(`http://127.0.0.1:3000/teachers`),
-                fetch(`http://127.0.0.1:3000/classes`),
-                fetch(`http://127.0.0.1:3000/extra-subjects`)
+                fetch(`${API_BASE_URL}/teachers`),
+                fetch(`${API_BASE_URL}/classes`),
+                fetch(`${API_BASE_URL}/subjects`)
             ]);
 
             if (!teachersRes.ok) throw new Error("Failed to fetch teacher");
@@ -95,7 +97,7 @@ export default function EditTeacherPage() {
         setError("");
 
         try {
-            const res = await fetch(`http://127.0.0.1:3000/teachers/${id}`, {
+            const res = await fetch(`${API_BASE_URL}/teachers/${id}`, {
                 method: "PATCH",
                 headers: { "Content-Type": "application/json" },
                 body: JSON.stringify(formData),
@@ -119,8 +121,9 @@ export default function EditTeacherPage() {
     const handleAssignSubject = async (e: React.FormEvent) => {
         e.preventDefault();
         setAssignLoading(true);
+        setAssignError("");
         try {
-            const res = await fetch(`http://127.0.0.1:3000/teachers/${id}/assign-subject`, {
+            const res = await fetch(`${API_BASE_URL}/teachers/${id}/assign-subject`, {
                 method: "POST",
                 headers: { "Content-Type": "application/json" },
                 body: JSON.stringify({
@@ -130,17 +133,34 @@ export default function EditTeacherPage() {
                 })
             });
 
-            if (!res.ok) throw new Error("Failed to assign subject");
+            if (!res.ok) {
+                const errData = await res.json();
+                throw new Error(errData.message || "Failed to assign subject");
+            }
 
             await fetchTeacherDetails();
             setSelectedClass("");
             setSelectedSection("");
             setSelectedSubject("");
-        } catch (err) {
+        } catch (err: any) {
             console.error(err);
-            alert("Failed to assign subject");
+            setAssignError(err.message || "Failed to assign subject");
         } finally {
             setAssignLoading(false);
+        }
+    };
+
+    const handleUnassignSubject = async (assignmentId: number) => {
+        if (!confirm("Are you sure you want to unassign this subject?")) return;
+        try {
+            const res = await fetch(`${API_BASE_URL}/teachers/${id}/assignments/${assignmentId}`, {
+                method: "DELETE",
+            });
+            if (!res.ok) throw new Error("Failed to unassign subject");
+            await fetchTeacherDetails();
+        } catch (err) {
+            console.error(err);
+            alert("Failed to unassign subject");
         }
     };
 
@@ -290,6 +310,7 @@ export default function EditTeacherPage() {
                                         <th scope="col" className="px-6 py-3">Subject</th>
                                         <th scope="col" className="px-6 py-3">Class</th>
                                         <th scope="col" className="px-6 py-3">Section</th>
+                                        <th scope="col" className="px-6 py-3">Action</th>
                                     </tr>
                                 </thead>
                                 <tbody>
@@ -298,6 +319,15 @@ export default function EditTeacherPage() {
                                             <td className="px-6 py-4 font-medium text-gray-900">{assignment.subject?.name}</td>
                                             <td className="px-6 py-4">{assignment.class?.name}</td>
                                             <td className="px-6 py-4">{assignment.section?.name}</td>
+                                            <td className="px-6 py-4">
+                                                <button
+                                                    type="button"
+                                                    onClick={() => handleUnassignSubject(assignment.id)}
+                                                    className="text-white bg-red-600 hover:bg-red-700 focus:ring-4 focus:outline-none focus:ring-red-300 font-medium rounded-lg text-xs px-3 py-1.5"
+                                                >
+                                                    Unassign
+                                                </button>
+                                            </td>
                                         </tr>
                                     ))}
                                 </tbody>
@@ -340,6 +370,11 @@ export default function EditTeacherPage() {
                             {assignLoading ? 'Assigning...' : 'Assign'}
                         </button>
                     </form>
+                    {assignError && (
+                        <div className="mt-3 p-3 text-sm text-red-800 rounded-lg bg-red-50" role="alert">
+                            {assignError}
+                        </div>
+                    )}
                 </div>
             </div>
         </main>

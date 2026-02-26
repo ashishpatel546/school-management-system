@@ -3,6 +3,7 @@
 import { useState, useEffect } from "react";
 import { useParams, useRouter } from "next/navigation";
 import Link from "next/link";
+import { API_BASE_URL } from "@/lib/api";
 
 export default function EditClassPage() {
     const router = useRouter();
@@ -29,8 +30,8 @@ export default function EditClassPage() {
         setLoading(true);
         try {
             const [classesRes, teachersRes] = await Promise.all([
-                fetch(`http://127.0.0.1:3000/classes`),
-                fetch(`http://127.0.0.1:3000/teachers`)
+                fetch(`${API_BASE_URL}/classes`),
+                fetch(`${API_BASE_URL}/teachers`)
             ]);
 
             if (!classesRes.ok) throw new Error("Failed to fetch classes");
@@ -113,7 +114,7 @@ export default function EditClassPage() {
         try {
             // 1. Update Class name if changed
             if (formData.name !== originalClassName) {
-                const res = await fetch(`http://127.0.0.1:3000/classes/${id}`, {
+                const res = await fetch(`${API_BASE_URL}/classes/${id}`, {
                     method: "PATCH",
                     headers: { "Content-Type": "application/json" },
                     body: JSON.stringify(formData),
@@ -123,7 +124,7 @@ export default function EditClassPage() {
 
             // 2. Delete sections that were removed in UI
             for (const delId of deletedSectionIds) {
-                const resDelete = await fetch(`http://127.0.0.1:3000/classes/sections/${delId}`, { method: "DELETE" });
+                const resDelete = await fetch(`${API_BASE_URL}/classes/sections/${delId}`, { method: "DELETE" });
                 if (!resDelete.ok) console.error("Failed to delete section", delId);
             }
 
@@ -133,7 +134,7 @@ export default function EditClassPage() {
                     // Existing section - update name if changed
                     const orig = originalSections.find(o => o.id === sec.id);
                     if (orig && orig.name !== sec.name) {
-                        await fetch(`http://127.0.0.1:3000/classes/sections/${sec.id}`, {
+                        await fetch(`${API_BASE_URL}/classes/sections/${sec.id}`, {
                             method: "PATCH",
                             headers: { "Content-Type": "application/json" },
                             body: JSON.stringify({ name: sec.name })
@@ -142,7 +143,7 @@ export default function EditClassPage() {
                     // Update teacher if changed
                     if (orig && orig.teacherId !== sec.teacherId) {
                         if (sec.teacherId) {
-                            await fetch(`http://127.0.0.1:3000/classes/sections/${sec.id}/teacher`, {
+                            await fetch(`${API_BASE_URL}/classes/sections/${sec.id}/teacher`, {
                                 method: "POST",
                                 headers: { "Content-Type": "application/json" },
                                 body: JSON.stringify({ teacherId: parseInt(sec.teacherId) })
@@ -151,7 +152,7 @@ export default function EditClassPage() {
                     }
                 } else {
                     // New section
-                    const createRes = await fetch(`http://127.0.0.1:3000/classes/sections`, {
+                    const createRes = await fetch(`${API_BASE_URL}/classes/sections`, {
                         method: "POST",
                         headers: { "Content-Type": "application/json" },
                         body: JSON.stringify({ classId: parseInt(id), name: sec.name })
@@ -160,7 +161,7 @@ export default function EditClassPage() {
                         const newSec = await createRes.json();
                         // Assign teacher to the newly created section if one was selected
                         if (sec.teacherId) {
-                            await fetch(`http://127.0.0.1:3000/classes/sections/${newSec.id}/teacher`, {
+                            await fetch(`${API_BASE_URL}/classes/sections/${newSec.id}/teacher`, {
                                 method: "POST",
                                 headers: { "Content-Type": "application/json" },
                                 body: JSON.stringify({ teacherId: parseInt(sec.teacherId) })

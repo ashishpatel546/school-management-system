@@ -2,6 +2,9 @@
 
 import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
+import useSWR from "swr";
+import { fetcher, API_BASE_URL } from "@/lib/api";
+import { Loader } from "@/components/ui/Loader";
 
 interface Teacher {
     id: number;
@@ -29,8 +32,8 @@ interface ClassData {
 
 export default function AttendancePage() {
     const router = useRouter();
-    const [classes, setClasses] = useState<ClassData[]>([]);
-    const [teachers, setTeachers] = useState<Teacher[]>([]);
+    const { data: classes = [], isLoading: loadingClasses } = useSWR<ClassData[]>('/classes', fetcher);
+    const { data: teachers = [], isLoading: loadingTeachers } = useSWR<Teacher[]>('/teachers', fetcher);
 
     const [selectedClassId, setSelectedClassId] = useState("");
     const [selectedSectionId, setSelectedSectionId] = useState("");
@@ -43,23 +46,6 @@ export default function AttendancePage() {
 
     const [loading, setLoading] = useState(false);
     const [message, setMessage] = useState({ text: "", type: "" });
-
-    // Fetch Initial Data
-    useEffect(() => {
-        const fetchInitialData = async () => {
-            try {
-                const [classesRes, teachersRes] = await Promise.all([
-                    fetch("http://localhost:3000/classes"),
-                    fetch("http://localhost:3000/teachers")
-                ]);
-                if (classesRes.ok) setClasses(await classesRes.json());
-                if (teachersRes.ok) setTeachers(await teachersRes.json());
-            } catch (err) {
-                console.error("Failed to fetch initial data", err);
-            }
-        };
-        fetchInitialData();
-    }, []);
 
     // Handle Class Selection Change
     useEffect(() => {
@@ -89,7 +75,7 @@ export default function AttendancePage() {
 
             try {
                 setLoading(true);
-                const res = await fetch(`http://localhost:3000/attendance/class/${selectedClassId}/section/${selectedSectionId}?date=${selectedDate}`);
+                const res = await fetch(`${API_BASE_URL}/attendance/class/${selectedClassId}/section/${selectedSectionId}?date=${selectedDate}`);
                 const data = await res.json();
 
                 if (data && data.id) {
@@ -181,7 +167,7 @@ export default function AttendancePage() {
 
         try {
             setLoading(true);
-            const res = await fetch("http://localhost:3000/attendance", {
+            const res = await fetch(`${API_BASE_URL}/attendance`, {
                 method: "POST",
                 headers: { "Content-Type": "application/json" },
                 body: JSON.stringify(payload)
@@ -204,6 +190,8 @@ export default function AttendancePage() {
 
     const selectedClass = classes.find(c => c.id.toString() === selectedClassId);
     const availableSections = selectedClass?.sections || [];
+
+    if (loadingClasses || loadingTeachers) return <Loader fullScreen text="Loading attendance dashboard..." />;
 
     return (
         <main className="p-4 flex-1 h-full overflow-y-auto w-full max-w-7xl mx-auto">

@@ -2,36 +2,20 @@
 
 import { useState, useEffect } from "react";
 import toast, { Toaster } from "react-hot-toast";
+import useSWR from "swr";
+import { API_BASE_URL, fetcher } from "@/lib/api";
+import { Loader } from "@/components/ui/Loader";
 
 export default function SettingsPage() {
-    const [sessions, setSessions] = useState<any[]>([]);
-    const [loading, setLoading] = useState(true);
-
+    const { data: sessions = [], error, isLoading: loading, mutate } = useSWR('/academic-sessions', fetcher);
     const [newSessionName, setNewSessionName] = useState("");
     const [newSessionStart, setNewSessionStart] = useState("");
     const [newSessionEnd, setNewSessionEnd] = useState("");
 
-    const fetchSessions = async () => {
-        try {
-            const res = await fetch("http://localhost:3000/academic-sessions");
-            if (res.ok) {
-                setSessions(await res.json());
-            }
-        } catch (err) {
-            console.error(err);
-        } finally {
-            setLoading(false);
-        }
-    };
-
-    useEffect(() => {
-        fetchSessions();
-    }, []);
-
     const handleCreateSession = async (e: React.FormEvent) => {
         e.preventDefault();
         try {
-            const res = await fetch("http://localhost:3000/academic-sessions", {
+            const res = await fetch(`${API_BASE_URL}/academic-sessions`, {
                 method: "POST",
                 headers: { "Content-Type": "application/json" },
                 body: JSON.stringify({
@@ -46,7 +30,7 @@ export default function SettingsPage() {
                 setNewSessionName("");
                 setNewSessionStart("");
                 setNewSessionEnd("");
-                fetchSessions();
+                mutate();
             } else {
                 const data = await res.json();
                 toast.error(data.message || "Failed to create session");
@@ -61,7 +45,7 @@ export default function SettingsPage() {
             // Unset all active
             for (const s of sessions) {
                 if (s.isActive && s.id !== id) {
-                    await fetch(`http://localhost:3000/academic-sessions/${s.id}`, {
+                    await fetch(`${API_BASE_URL}/academic-sessions/${s.id}`, {
                         method: "PATCH",
                         headers: { "Content-Type": "application/json" },
                         body: JSON.stringify({ isActive: false })
@@ -69,14 +53,14 @@ export default function SettingsPage() {
                 }
             }
             // Set target active
-            const res = await fetch(`http://localhost:3000/academic-sessions/${id}`, {
+            const res = await fetch(`${API_BASE_URL}/academic-sessions/${id}`, {
                 method: "PATCH",
                 headers: { "Content-Type": "application/json" },
                 body: JSON.stringify({ isActive: true })
             });
             if (res.ok) {
                 toast.success("Active session updated!");
-                fetchSessions();
+                mutate();
             }
         } catch (err) {
             toast.error("Network error");
@@ -85,6 +69,7 @@ export default function SettingsPage() {
 
     return (
         <main className="p-4 flex-1 h-full overflow-y-auto w-full max-w-7xl mx-auto">
+            {error && <div className="p-4 text-red-600 mb-4 bg-red-50 rounded">Error loading sessions</div>}
             <Toaster position="top-right" />
             <h1 className="text-3xl font-bold mb-6 text-slate-800">System Settings</h1>
 
@@ -113,7 +98,7 @@ export default function SettingsPage() {
                     </form>
 
                     {loading ? (
-                        <div className="text-sm text-gray-500 animate-pulse">Loading sessions...</div>
+                        <Loader text="Loading sessions..." />
                     ) : (
                         <div className="relative overflow-x-auto rounded-lg border border-gray-200">
                             <table className="w-full text-sm text-left text-gray-500">
@@ -126,7 +111,7 @@ export default function SettingsPage() {
                                     </tr>
                                 </thead>
                                 <tbody>
-                                    {sessions.map(s => (
+                                    {sessions.map((s: any) => (
                                         <tr key={s.id} className="bg-white border-b hover:bg-gray-50">
                                             <td className="px-4 py-3 font-semibold text-slate-800">{s.name}</td>
                                             <td className="px-4 py-3 text-xs">

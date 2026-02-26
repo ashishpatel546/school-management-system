@@ -1,0 +1,14 @@
+Task1: In Teacher model, we can add the following fields:
+1. Designation of teachers can be enum. PGT, TGT, PRT, PRE-PRIMARY, HOD, PRINCIPAL, VICE-PRINCIPAL, CO-ORDINATOR, SPECIAL-EDUCATOR, LIBRARIAN, TEACHING-ASSISTANT
+2. Specialized Subject.
+3. Compensation
+4. Reporting Manager
+
+
+Task2: Enhance the landing page after login. It lands on Dashboard page, Generally it should be a well attractive page and from there user can navigate to dashboard which shows just a count of students and teachers. We can add more information like fee due, attendance, etc.
+
+Task3: 
+On login page, make it more attractive with add some image and better design.
+
+Task4: 
+While clicking on any menu like 'Teachers', it got selected and highlights on left hand side, but 'Dashboard' also appears selected. Generally if we navigate to some other page, the previous page should not be highlighted. It should be like if we click on 'Teachers' then only 'Teachers' should be highlighted. And if we navigate to 'Dashboard' from 'Teachers' page, then 'Teachers' should not be highlighted and 'Dashboard' should be highlighted. 

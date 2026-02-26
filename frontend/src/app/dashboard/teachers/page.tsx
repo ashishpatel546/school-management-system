@@ -3,6 +3,7 @@
 import { useState, useEffect } from "react";
 import Link from "next/link";
 import Table from "../../../components/Table";
+import { API_BASE_URL } from "@/lib/api";
 
 export default function TeachersPage() {
     const [teachers, setTeachers] = useState<any[]>([]);
@@ -25,7 +26,7 @@ export default function TeachersPage() {
             if (searchEmail) params.append("email", searchEmail);
             if (searchStatus !== "") params.append("isActive", searchStatus);
 
-            const res = await fetch(`http://localhost:3000/teachers?${params.toString()}`);
+            const res = await fetch(`${API_BASE_URL}/teachers?${params.toString()}`);
             if (res.ok) {
                 const data = await res.json();
                 setTeachers(data);

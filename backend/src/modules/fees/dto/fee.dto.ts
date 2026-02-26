@@ -14,6 +14,22 @@ export class CreateFeeCategoryDto {
     description?: string;
 }
 
+export class UpdateFeeCategoryDto {
+    @ApiPropertyOptional()
+    @IsString()
+    @IsOptional()
+    name?: string;
+
+    @ApiPropertyOptional()
+    @IsString()
+    @IsOptional()
+    description?: string;
+
+    @ApiPropertyOptional()
+    @IsOptional()
+    isActive?: boolean;
+}
+
 export class CreateFeeStructureDto {
     @ApiProperty()
     @IsNumber()
@@ -48,7 +64,7 @@ export class UpdateFeeStructureDto {
     academicYear?: string;
 }
 
-import { DiscountType } from '../entities/discount-category.entity';
+import { DiscountType, DiscountApplicationType } from '../entities/discount-category.entity';
 
 export class CreateDiscountCategoryDto {
     @ApiProperty()
@@ -65,6 +81,47 @@ export class CreateDiscountCategoryDto {
     @IsNumber()
     @IsNotEmpty()
     value: number;
+
+    @ApiProperty({ enum: DiscountApplicationType })
+    @IsEnum(DiscountApplicationType)
+    @IsOptional()
+    applicationType?: DiscountApplicationType;
+
+    @ApiPropertyOptional()
+    @IsString()
+    @IsOptional()
+    logicReference?: string;
+}
+
+export class UpdateDiscountCategoryDto {
+    @ApiPropertyOptional()
+    @IsString()
+    @IsOptional()
+    name?: string;
+
+    @ApiPropertyOptional({ enum: DiscountType })
+    @IsEnum(DiscountType)
+    @IsOptional()
+    type?: DiscountType;
+
+    @ApiPropertyOptional()
+    @IsNumber()
+    @IsOptional()
+    value?: number;
+
+    @ApiPropertyOptional({ enum: DiscountApplicationType })
+    @IsEnum(DiscountApplicationType)
+    @IsOptional()
+    applicationType?: DiscountApplicationType;
+
+    @ApiPropertyOptional()
+    @IsString()
+    @IsOptional()
+    logicReference?: string;
+
+    @ApiPropertyOptional()
+    @IsOptional()
+    isActive?: boolean;
 }
 
 export class UpdateGlobalFeeSettingsDto {
@@ -104,8 +161,32 @@ export class CollectPaymentDto {
     @IsOptional()
     remarks?: string;
 
+    @ApiPropertyOptional()
+    @IsString()
+    @IsOptional()
+    discountNames?: string;
+
+    @ApiPropertyOptional()
+    @IsNumber()
+    @IsOptional()
+    discountAmount?: number;
+
+    @ApiPropertyOptional()
+    @IsNumber()
+    @IsOptional()
+    baseFeeAmount?: number;
+
+    @ApiPropertyOptional()
+    @IsNumber()
+    @IsOptional()
+    otherFeeAmount?: number;
+
     @ApiProperty({ example: '2026-2027' })
     @IsString()
     @IsNotEmpty()
     academicYear: string;
+
+    @ApiPropertyOptional()
+    @IsOptional()
+    feeBreakdown?: any;
 }

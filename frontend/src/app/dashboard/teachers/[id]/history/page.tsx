@@ -3,6 +3,7 @@
 import { useState, useEffect } from "react";
 import { useParams } from "next/navigation";
 import Link from "next/link";
+import { API_BASE_URL } from "@/lib/api";
 
 export default function TeacherHistoryPage() {
     const params = useParams();
@@ -15,7 +16,7 @@ export default function TeacherHistoryPage() {
         if (!id) return;
         const fetchHistory = async () => {
             try {
-                const res = await fetch(`http://127.0.0.1:3000/teachers/${id}/history`);
+                const res = await fetch(`${API_BASE_URL}/teachers/${id}/history`);
                 if (!res.ok) throw new Error("Failed to fetch history");
                 const data = await res.json();
                 // Handle legacy response or new object structure

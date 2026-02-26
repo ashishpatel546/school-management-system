@@ -3,27 +3,13 @@
 import { useState, useEffect } from "react";
 import Link from "next/link";
 import Table from "../../../components/Table";
+import useSWR from "swr";
+import { fetcher } from "@/lib/api";
+import { Loader } from "@/components/ui/Loader";
 
 export default function SubjectsPage() {
-    const [subjects, setSubjects] = useState<any[]>([]);
-    const [loading, setLoading] = useState(true);
+    const { data: subjects = [], isLoading: loading, error } = useSWR('/subjects', fetcher);
     const [searchTerm, setSearchTerm] = useState("");
-
-    useEffect(() => {
-        const fetchSubjects = async () => {
-            try {
-                const res = await fetch('http://localhost:3000/extra-subjects');
-                if (res.ok) {
-                    setSubjects(await res.json());
-                }
-            } catch (error) {
-                console.error("Error loading subjects:", error);
-            } finally {
-                setLoading(false);
-            }
-        };
-        fetchSubjects();
-    }, []);
 
     const filteredSubjects = subjects.filter((s: any) => {
         if (!searchTerm) return true;
@@ -41,6 +27,8 @@ export default function SubjectsPage() {
             )
         }
     ];
+
+    if (error) return <div className="p-4 text-red-500">Failed to load subjects</div>;
 
     return (
         <main className="p-4 bg-slate-50 min-h-screen">

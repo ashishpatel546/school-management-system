@@ -1,9 +1,14 @@
-import { Entity, PrimaryGeneratedColumn, Column, ManyToMany } from 'typeorm';
-import { Student } from '../../students/entities/student.entity';
+import { Entity, PrimaryGeneratedColumn, Column, OneToMany } from 'typeorm';
+import { StudentDiscount } from './student-discount.entity';
 
 export enum DiscountType {
     PERCENTAGE = 'PERCENTAGE',
     FLAT = 'FLAT'
+}
+
+export enum DiscountApplicationType {
+    AUTO = 'AUTO',
+    MANUAL = 'MANUAL'
 }
 
 @Entity()
@@ -24,6 +29,19 @@ export class DiscountCategory {
     @Column('decimal', { precision: 10, scale: 2 })
     value: number;
 
-    @ManyToMany(() => Student, (student) => student.discounts)
-    students: Student[];
+    @Column({
+        type: 'enum',
+        enum: DiscountApplicationType,
+        default: DiscountApplicationType.MANUAL
+    })
+    applicationType: DiscountApplicationType;
+
+    @Column({ nullable: true })
+    logicReference: string;
+
+    @Column({ default: true })
+    isActive: boolean;
+
+    @OneToMany(() => StudentDiscount, (sd) => sd.discountCategory)
+    studentDiscounts: StudentDiscount[];
 }

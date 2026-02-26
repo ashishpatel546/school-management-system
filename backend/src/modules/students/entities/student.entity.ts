@@ -3,8 +3,8 @@ import { User } from '../../users/entities/user.entity';
 import { StudentSubject } from './student-subject.entity';
 import { Class } from '../../classes/entities/class.entity';
 import { Section } from '../../classes/entities/section.entity';
-import { DiscountCategory } from '../../fees/entities/discount-category.entity';
 import { StudentEnrollment } from '../../student-enrollments/entities/student-enrollment.entity';
+import { StudentDiscount } from '../../fees/entities/student-discount.entity';
 
 @Entity()
 export class Student {
@@ -27,9 +27,8 @@ export class Student {
     @ManyToOne(() => Section, (section) => section.students, { nullable: true })
     section: Section;
 
-    @ManyToMany(() => DiscountCategory, (discount) => discount.students)
-    @JoinTable()
-    discounts: DiscountCategory[];
+    @OneToMany(() => StudentDiscount, (sd) => sd.student, { cascade: true })
+    studentDiscounts: StudentDiscount[];
 
     @OneToMany(() => StudentEnrollment, enrollment => enrollment.student)
     enrollments: StudentEnrollment[];

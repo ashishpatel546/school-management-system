@@ -3,26 +3,17 @@
 import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
+import useSWR from "swr";
+import { fetcher, API_BASE_URL } from "@/lib/api";
+import { Loader } from "@/components/ui/Loader";
 
 export default function AddSectionPage() {
     const router = useRouter();
-    const [classes, setClasses] = useState([]);
+    const { data: classes, error: fetchError, isLoading } = useSWR('/classes', fetcher);
     const [name, setName] = useState("");
     const [classId, setClassId] = useState("");
     const [loading, setLoading] = useState(false);
     const [error, setError] = useState("");
-
-    useEffect(() => {
-        const fetchClasses = async () => {
-            try {
-                const res = await fetch("http://localhost:3000/classes");
-                if (res.ok) setClasses(await res.json());
-            } catch (err) {
-                console.error("Failed to fetch classes", err);
-            }
-        };
-        fetchClasses();
-    }, []);
 
     const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault();
@@ -36,7 +27,7 @@ export default function AddSectionPage() {
         }
 
         try {
-            const res = await fetch("http://localhost:3000/classes/sections", {
+            const res = await fetch(`${API_BASE_URL}/classes/sections`, {
                 method: "POST",
                 headers: {
                     "Content-Type": "application/json",
@@ -56,6 +47,8 @@ export default function AddSectionPage() {
             setLoading(false);
         }
     };
+    if (isLoading) return <Loader fullScreen text="Loading classes..." />;
+    if (fetchError) return <div className="p-4 text-red-500">Failed to load classes</div>;
 
     return (
         <main className="p-4">
@@ -79,7 +72,7 @@ export default function AddSectionPage() {
                             required
                         >
                             <option value="">Choose a class</option>
-                            {classes.map((cls: any) => (
+                            {classes?.map((cls: any) => (
                                 <option key={cls.id} value={cls.id}>
                                     {cls.name}
                                 </option>

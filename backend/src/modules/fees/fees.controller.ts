@@ -1,6 +1,6 @@
-import { Controller, Get, Post, Put, Body, Param, Query, ParseIntPipe } from '@nestjs/common';
+import { Controller, Get, Post, Put, Delete, Body, Param, Query, ParseIntPipe, Patch } from '@nestjs/common';
 import { FeesService } from './fees.service';
-import { CreateFeeCategoryDto, CreateFeeStructureDto, CollectPaymentDto, UpdateFeeStructureDto, CreateDiscountCategoryDto, UpdateGlobalFeeSettingsDto } from './dto/fee.dto';
+import { CreateFeeCategoryDto, CreateFeeStructureDto, CollectPaymentDto, UpdateFeeStructureDto, CreateDiscountCategoryDto, UpdateGlobalFeeSettingsDto, UpdateDiscountCategoryDto, UpdateFeeCategoryDto } from './dto/fee.dto';
 import { ApiTags, ApiOperation, ApiQuery } from '@nestjs/swagger';
 
 @ApiTags('Fees')
@@ -32,6 +32,24 @@ export class FeesController {
         return this.feesService.getDiscountCategories();
     }
 
+    @ApiOperation({ summary: 'Update a discount category' })
+    @Put('discounts/:id')
+    updateDiscountCategory(@Param('id', ParseIntPipe) id: number, @Body() dto: UpdateDiscountCategoryDto) {
+        return this.feesService.updateDiscountCategory(id, dto);
+    }
+
+    @ApiOperation({ summary: 'Toggle status of a discount category' })
+    @Patch('discounts/:id/toggle-status')
+    toggleDiscountCategoryStatus(@Param('id', ParseIntPipe) id: number, @Body('isActive') isActive: boolean) {
+        return this.feesService.toggleDiscountCategoryStatus(id, isActive);
+    }
+
+    @ApiOperation({ summary: 'Delete a discount category' })
+    @Delete('discounts/:id')
+    deleteDiscountCategory(@Param('id', ParseIntPipe) id: number) {
+        return this.feesService.deleteDiscountCategory(id);
+    }
+
     @ApiOperation({ summary: 'Create a new fee category (e.g. Tuition, Curriculum)' })
     @Post('categories')
     createFeeCategory(@Body() dto: CreateFeeCategoryDto) {
@@ -42,6 +60,24 @@ export class FeesController {
     @Get('categories')
     getFeeCategories() {
         return this.feesService.getFeeCategories();
+    }
+
+    @ApiOperation({ summary: 'Update a fee category' })
+    @Put('categories/:id')
+    updateFeeCategory(@Param('id', ParseIntPipe) id: number, @Body() dto: UpdateFeeCategoryDto) {
+        return this.feesService.updateFeeCategory(id, dto);
+    }
+
+    @ApiOperation({ summary: 'Toggle status of a fee category' })
+    @Patch('categories/:id/toggle-status')
+    toggleFeeCategoryStatus(@Param('id', ParseIntPipe) id: number, @Body('isActive') isActive: boolean) {
+        return this.feesService.toggleFeeCategoryStatus(id, isActive);
+    }
+
+    @ApiOperation({ summary: 'Delete a fee category' })
+    @Delete('categories/:id')
+    deleteFeeCategory(@Param('id', ParseIntPipe) id: number) {
+        return this.feesService.deleteFeeCategory(id);
     }
 
     @ApiOperation({ summary: 'Create a fee structure for a class' })
@@ -60,6 +96,12 @@ export class FeesController {
     @Put('structures/:id')
     updateFeeStructure(@Param('id', ParseIntPipe) id: number, @Body() dto: UpdateFeeStructureDto) {
         return this.feesService.updateFeeStructure(id, dto);
+    }
+
+    @ApiOperation({ summary: 'Delete an existing fee structure' })
+    @Delete('structures/:id')
+    deleteFeeStructure(@Param('id', ParseIntPipe) id: number) {
+        return this.feesService.deleteFeeStructure(id);
     }
 
     @ApiOperation({ summary: 'Get dynamic 12-month fee details for a specific student' })

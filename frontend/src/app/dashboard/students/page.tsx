@@ -3,6 +3,7 @@
 import { useState, useEffect } from "react";
 import Link from "next/link";
 import Table from "../../../components/Table";
+import { API_BASE_URL } from "@/lib/api";
 
 export default function StudentsPage() {
     const [students, setStudents] = useState<any[]>([]);
@@ -27,7 +28,7 @@ export default function StudentsPage() {
             if (searchParents) params.append("parentsName", searchParents);
             if (searchStatus !== "") params.append("isActive", searchStatus);
 
-            const res = await fetch(`http://localhost:3000/students?${params.toString()}`);
+            const res = await fetch(`${API_BASE_URL}/students?${params.toString()}`);
             if (res.ok) {
                 const data = await res.json();
                 setStudents(data);
@@ -71,7 +72,7 @@ export default function StudentsPage() {
         {
             header: "Subjects",
             render: (row: any) => row.studentSubjects && row.studentSubjects.length > 0
-                ? row.studentSubjects.map((ss: any) => ss.extraSubject?.name).join(', ')
+                ? row.studentSubjects.map((ss: any) => (ss.subject || ss.extraSubject)?.name).filter(Boolean).join(', ')
                 : '-'
         },
         {

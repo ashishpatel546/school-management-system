@@ -2,30 +2,19 @@
 import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
+import useSWR from "swr";
+import { fetcher, API_BASE_URL } from "@/lib/api";
+import { Loader } from "@/components/ui/Loader";
 
 export default function AddClassPage() {
     const router = useRouter();
     const [name, setName] = useState("");
-    const [teachers, setTeachers] = useState<any[]>([]);
+    const { data: teachers, error: fetchError, isLoading } = useSWR('/teachers', fetcher);
     const [sections, setSections] = useState<{ name: string; teacherId: string }[]>([
         { name: "A", teacherId: "" } // Default first section
     ]);
     const [loading, setLoading] = useState(false);
     const [error, setError] = useState("");
-
-    useEffect(() => {
-        const fetchTeachers = async () => {
-            try {
-                const res = await fetch("http://localhost:3000/teachers");
-                if (res.ok) {
-                    setTeachers(await res.json());
-                }
-            } catch (err) {
-                console.error("Failed to fetch teachers", err);
-            }
-        };
-        fetchTeachers();
-    }, []);
 
     const handleSectionChange = (index: number, field: 'name' | 'teacherId', value: string) => {
         const newSections = [...sections];
@@ -65,7 +54,7 @@ export default function AddClassPage() {
                 }))
             };
 
-            const res = await fetch("http://localhost:3000/classes", {
+            const res = await fetch(`${API_BASE_URL}/classes`, {
                 method: "POST",
                 headers: {
                     "Content-Type": "application/json",
@@ -85,6 +74,8 @@ export default function AddClassPage() {
             setLoading(false);
         }
     };
+    if (isLoading) return <Loader fullScreen text="Loading teachers..." />;
+    if (fetchError) return <div className="p-4 text-red-500">Failed to load teachers</div>;
 
     return (
         <main className="p-4">
@@ -145,7 +136,7 @@ export default function AddClassPage() {
                                             className="bg-white border border-gray-300 text-gray-900 text-sm rounded-lg focus:ring-blue-500 focus:border-blue-500 block w-full p-2.5"
                                         >
                                             <option value="">Select Teacher</option>
-                                            {teachers.map((t: any) => (
+                                            {teachers?.map((t: any) => (
                                                 <option key={t.id} value={t.id}>
                                                     {t.firstName} {t.lastName}
                                                 </option>

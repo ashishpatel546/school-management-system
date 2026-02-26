@@ -6,11 +6,12 @@ import { FeeStructure } from './entities/fee-structure.entity';
 import { FeePayment } from './entities/fee-payment.entity';
 import { GlobalFeeSettings } from './entities/global-fee-settings.entity';
 import { DiscountCategory, DiscountType } from './entities/discount-category.entity';
-import { CreateFeeCategoryDto, CreateFeeStructureDto, CollectPaymentDto, UpdateFeeStructureDto, CreateDiscountCategoryDto, UpdateGlobalFeeSettingsDto } from './dto/fee.dto';
+import { CreateFeeCategoryDto, CreateFeeStructureDto, CollectPaymentDto, UpdateFeeStructureDto, CreateDiscountCategoryDto, UpdateGlobalFeeSettingsDto, UpdateFeeCategoryDto, UpdateDiscountCategoryDto } from './dto/fee.dto';
 import { Class } from '../classes/entities/class.entity';
 import { Student } from '../students/entities/student.entity';
-import { SubjectCategory } from '../extra-subjects/entities/extra-subject.entity';
+import { SubjectCategory } from '../subjects/entities/subject.entity';
 import { StudentEnrollment } from '../student-enrollments/entities/student-enrollment.entity';
+import { StudentDiscount } from './entities/student-discount.entity';
 
 @Injectable()
 export class FeesService {
@@ -60,6 +61,34 @@ export class FeesService {
         return this.discountCategoryRepository.find();
     }
 
+    async updateDiscountCategory(id: number, dto: UpdateDiscountCategoryDto) {
+        const discount = await this.discountCategoryRepository.findOne({ where: { id } });
+        if (!discount) throw new NotFoundException('Discount Category not found');
+
+        Object.assign(discount, dto);
+        return this.discountCategoryRepository.save(discount);
+    }
+
+    async toggleDiscountCategoryStatus(id: number, isActive: boolean) {
+        const discount = await this.discountCategoryRepository.findOne({ where: { id } });
+        if (!discount) throw new NotFoundException('Discount Category not found');
+        discount.isActive = isActive;
+        return this.discountCategoryRepository.save(discount);
+    }
+
+    async deleteDiscountCategory(id: number) {
+        const discount = await this.discountCategoryRepository.findOne({ where: { id } });
+        if (!discount) throw new NotFoundException('Discount Category not found');
+
+        const linkedCount = await this.discountCategoryRepository.manager.count(StudentDiscount, { where: { discountCategory: { id } } });
+        if (linkedCount > 0) {
+            throw new ConflictException('Cannot delete Discount Category as it is currently assigned to one or more students. Please delink or deactivate it instead.');
+        }
+
+        await this.discountCategoryRepository.remove(discount);
+        return { message: 'Discount Category deleted successfully' };
+    }
+
     // --- Fee Category ---
     async createFeeCategory(dto: CreateFeeCategoryDto) {
         const category = this.feeCategoryRepository.create(dto);
@@ -68,6 +97,34 @@ export class FeesService {
 
     async getFeeCategories() {
         return this.feeCategoryRepository.find();
+    }
+
+    async updateFeeCategory(id: number, dto: UpdateFeeCategoryDto) {
+        const category = await this.feeCategoryRepository.findOne({ where: { id } });
+        if (!category) throw new NotFoundException('Fee Category not found');
+
+        Object.assign(category, dto);
+        return this.feeCategoryRepository.save(category);
+    }
+
+    async toggleFeeCategoryStatus(id: number, isActive: boolean) {
+        const category = await this.feeCategoryRepository.findOne({ where: { id } });
+        if (!category) throw new NotFoundException('Fee Category not found');
+        category.isActive = isActive;
+        return this.feeCategoryRepository.save(category);
+    }
+
+    async deleteFeeCategory(id: number) {
+        const category = await this.feeCategoryRepository.findOne({ where: { id } });
+        if (!category) throw new NotFoundException('Fee Category not found');
+
+        const linkedStructures = await this.feeStructureRepository.count({ where: { feeCategory: { id } } });
+        if (linkedStructures > 0) {
+            throw new ConflictException('Cannot delete Fee Category as it is currently assigned to one or more classes. Please delink or deactivate it instead.');
+        }
+
+        await this.feeCategoryRepository.remove(category);
+        return { message: 'Fee Category deleted successfully' };
     }
 
     // --- Fee Structure ---
@@ -107,11 +164,19 @@ export class FeesService {
         return this.feeStructureRepository.save(structure);
     }
 
+    async deleteFeeStructure(id: number) {
+        const structure = await this.feeStructureRepository.findOne({ where: { id } });
+        if (!structure) throw new NotFoundException('Fee Structure not found');
+
+        await this.feeStructureRepository.remove(structure);
+        return { message: 'Fee Structure deleted successfully' };
+    }
+
     // --- Dynamic Student Fee Details ---
     async getStudentFeeDetails(studentId: number, academicYear: string) {
         const student = await this.studentRepository.findOne({
             where: { id: studentId },
-            relations: ['studentSubjects', 'studentSubjects.extraSubject', 'studentSubjects.extraSubject.feeCategory', 'discounts']
+            relations: ['studentSubjects', 'studentSubjects.subject', 'studentSubjects.subject.feeCategory', 'studentDiscounts', 'studentDiscounts.discountCategory']
         });
 
         if (!student) throw new NotFoundException('Student not found');
@@ -142,7 +207,7 @@ export class FeesService {
 
         // Check base subjects vs optional/activities
         for (const sub of student.studentSubjects) {
-            const extraSub = sub.extraSubject;
+            const extraSub = sub.subject;
             if (!extraSub) continue;
 
             if (extraSub.subjectCategory === SubjectCategory.BASE) {
@@ -177,11 +242,19 @@ export class FeesService {
 
         // 2. Calculate Discounts
         let discountAmount = 0;
-        for (const d of student.discounts || []) {
+        const appliedDiscounts: { name: string; amount: number }[] = [];
+        for (const sd of student.studentDiscounts || []) {
+            if (!sd.isActive) continue;
+            const d = sd.discountCategory;
+            let val = 0;
             if (d.type === DiscountType.FLAT) {
-                discountAmount += Number(d.value);
+                val = Number(d.value);
             } else if (d.type === DiscountType.PERCENTAGE) {
-                discountAmount += (monthlyBaseFee * Number(d.value)) / 100;
+                val = (monthlyBaseFee * Number(d.value)) / 100;
+            }
+            if (val > 0) {
+                discountAmount += val;
+                appliedDiscounts.push({ name: d.name, amount: val });
             }
         }
 
@@ -235,6 +308,7 @@ export class FeesService {
                 monthName: `${monthNames[i]} ${y}`,
                 baseFee: monthlyBaseFee,
                 discount: discountAmount,
+                appliedDiscounts,
                 netFee: netMonthlyFee,
                 lateFee,
                 totalDue: monthTotalDue,
@@ -246,7 +320,12 @@ export class FeesService {
                     receiptNumber: p.receiptNumber,
                     paymentDate: p.paymentDate,
                     amountPaid: p.amountPaid,
-                    paymentMethod: p.paymentMethod
+                    paymentMethod: p.paymentMethod,
+                    discountNames: p.discountNames,
+                    discountAmount: p.discountAmount,
+                    baseFeeAmount: p.baseFeeAmount,
+                    otherFeeAmount: p.otherFeeAmount,
+                    feeBreakdown: p.feeBreakdown
                 }))
             });
         }
@@ -278,7 +357,12 @@ export class FeesService {
                 paymentMethod: dto.paymentMethod,
                 remarks: dto.remarks,
                 receiptNumber,
-                academicYear: dto.academicYear
+                academicYear: dto.academicYear,
+                discountNames: dto.discountNames,
+                discountAmount: dto.discountAmount ? Number(dto.discountAmount) / dto.feeMonths.length : 0,
+                baseFeeAmount: dto.baseFeeAmount ? Number(dto.baseFeeAmount) / dto.feeMonths.length : 0,
+                otherFeeAmount: dto.otherFeeAmount ? Number(dto.otherFeeAmount) / dto.feeMonths.length : 0,
+                feeBreakdown: dto.feeBreakdown
             });
             savedPayments.push(await this.feePaymentRepository.save(payment));
         }

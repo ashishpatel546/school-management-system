@@ -3,6 +3,8 @@
 import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
+import toast from "react-hot-toast";
+import { API_BASE_URL } from "@/lib/api";
 
 export default function AddStudentPage() {
     const router = useRouter();
@@ -31,17 +33,19 @@ export default function AddStudentPage() {
 
     // Sibling Modal State
     const [showSiblingModal, setShowSiblingModal] = useState(false);
+    const [siblingModalError, setSiblingModalError] = useState("");
     const [siblingSearch, setSiblingSearch] = useState("");
+    const [siblingSearchMode, setSiblingSearchMode] = useState<'name' | 'id'>('name');
     const [siblingResults, setSiblingResults] = useState<any[]>([]);
     const [siblingLoading, setSiblingLoading] = useState(false);
-    const [selectedSiblingObj, setSelectedSiblingObj] = useState<any>(null); // To show name in UI
+    const [selectedSiblingObj, setSelectedSiblingObj] = useState<any>(null);
 
     useEffect(() => {
         const fetchSetup = async () => {
             try {
                 const [discRes, sessRes] = await Promise.all([
-                    fetch('http://localhost:3000/fees/discounts'),
-                    fetch('http://localhost:3000/academic-sessions')
+                    fetch(`${API_BASE_URL}/fees/discounts`),
+                    fetch(`${API_BASE_URL}/academic-sessions`)
                 ]);
 
                 if (discRes.ok) setAvailableDiscounts(await discRes.json());
@@ -59,15 +63,48 @@ export default function AddStudentPage() {
     }, []);
 
     const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) => {
-        setFormData({ ...formData, [e.target.name]: e.target.value });
+        const { name, value } = e.target;
+        setFormData({ ...formData, [name]: value });
+
+        // Auto-suggest Girl discount
+        if (name === 'gender' && value === 'Female') {
+            const girlDiscount = availableDiscounts.find(d => d.applicationType === 'AUTO' && d.logicReference === 'GIRL');
+            if (girlDiscount && !selectedDiscounts.includes(girlDiscount.id)) {
+                setSelectedDiscounts(prev => [...prev, girlDiscount.id]);
+                toast.success(`Auto-applied: ${girlDiscount.name}`);
+            }
+        }
+    };
+
+    const openSiblingModal = () => {
+        if (!formData.fathersName.trim() || !formData.mothersName.trim()) {
+            setSiblingModalError("Please fill in Father's Name and Mother's Name before searching for a sibling.");
+            return;
+        }
+        setSiblingModalError("");
+        setSiblingSearch("");
+        setSiblingResults([]);
+        setSiblingSearchMode('name');
+        setShowSiblingModal(true);
     };
 
     const handleSearchSibling = async () => {
-        if (!siblingSearch) return;
+        if (!siblingSearch.trim()) return;
         setSiblingLoading(true);
         try {
-            // Using Phase 8 API logic
-            const res = await fetch(`http://localhost:3000/students?firstName=${siblingSearch}&lastName=${siblingSearch}`);
+            let url: string;
+            if (siblingSearchMode === 'id') {
+                const numericId = parseInt(siblingSearch.trim());
+                if (isNaN(numericId)) {
+                    setSiblingResults([]);
+                    setSiblingLoading(false);
+                    return;
+                }
+                url = `${API_BASE_URL}/students?id=${numericId}`;
+            } else {
+                url = `${API_BASE_URL}/students?search=${encodeURIComponent(siblingSearch.trim())}`;
+            }
+            const res = await fetch(url);
             if (res.ok) {
                 const data = await res.json();
                 setSiblingResults(data);
@@ -77,6 +114,14 @@ export default function AddStudentPage() {
         } finally {
             setSiblingLoading(false);
         }
+    };
+
+    const isSiblingMatch = (sibling: any) => {
+        const sibFather = (sibling.fathersName || "").trim().toLowerCase();
+        const sibMother = (sibling.mothersName || "").trim().toLowerCase();
+        const myFather = formData.fathersName.trim().toLowerCase();
+        const myMother = formData.mothersName.trim().toLowerCase();
+        return sibFather === myFather && sibMother === myMother;
     };
 
     const selectSibling = (sibling: any) => {
@@ -90,16 +135,19 @@ export default function AddStudentPage() {
         setShowSiblingModal(false);
         setSiblingSearch("");
         setSiblingResults([]);
+
+        // Auto-suggest Sibling discount
+        const siblingDiscount = availableDiscounts.find(d => d.applicationType === 'AUTO' && d.logicReference === 'SIBLING');
+        if (siblingDiscount && !selectedDiscounts.includes(siblingDiscount.id)) {
+            setSelectedDiscounts(prev => [...prev, siblingDiscount.id]);
+            toast.success(`Auto-applied: ${siblingDiscount.name}`);
+        }
     };
 
     const clearSibling = () => {
         setSelectedSiblingObj(null);
-        setFormData({
-            ...formData,
-            siblingId: "",
-            fathersName: "",
-            mothersName: ""
-        });
+        // Only clear the sibling link — keep parent names intact
+        setFormData({ ...formData, siblingId: "" });
     };
 
     const handleSubmit = async (e: React.FormEvent) => {
@@ -115,7 +163,16 @@ export default function AddStudentPage() {
                 academicSessionId: selectedSessionId !== "" ? selectedSessionId : undefined
             };
 
-            const res = await fetch("http://localhost:3000/students", {
+            // Remove optional empty string fields to prevent validation errors
+            const optionalFields = ['email', 'aadhaarNumber', 'mobile', 'alternateMobile', 'category', 'bloodGroup', 'religion', 'dateOfBirth'];
+            optionalFields.forEach(field => {
+                const key = field as keyof typeof payload;
+                if (!payload[key]) {
+                    delete payload[key];
+                }
+            });
+
+            const res = await fetch(`${API_BASE_URL}/students`, {
                 method: "POST",
                 headers: {
                     "Content-Type": "application/json",
@@ -149,6 +206,7 @@ export default function AddStudentPage() {
                 )}
 
                 <form onSubmit={handleSubmit} className="space-y-8">
+                    {/* TODO: For future, we'll make fields compulsory. For now only first name, last name, gender, father's name, mother's name make compulsory. All other are optional. */}
                     {/* Basic Info */}
                     <div>
                         <h3 className="text-lg font-bold mb-4 text-slate-700 border-b pb-2">Basic Information</h3>
@@ -162,8 +220,8 @@ export default function AddStudentPage() {
                                 <input type="text" id="lastName" name="lastName" value={formData.lastName} onChange={handleChange} className="bg-gray-50 border border-gray-300 text-sm rounded-lg block w-full p-2.5" required />
                             </div>
                             <div>
-                                <label htmlFor="gender" className="block mb-2 text-sm font-medium text-gray-900">Gender</label>
-                                <select id="gender" name="gender" value={formData.gender} onChange={handleChange} className="bg-gray-50 border border-gray-300 text-sm rounded-lg block w-full p-2.5">
+                                <label htmlFor="gender" className="block mb-2 text-sm font-medium text-gray-900">Gender <span className="text-red-500">*</span></label>
+                                <select id="gender" name="gender" value={formData.gender} onChange={handleChange} className="bg-gray-50 border border-gray-300 text-sm rounded-lg block w-full p-2.5" required>
                                     <option value="">Select Gender</option>
                                     <option value="Male">Male</option>
                                     <option value="Female">Female</option>
@@ -212,21 +270,18 @@ export default function AddStudentPage() {
 
                     {/* Parent & Family Info */}
                     <div>
-                        <div className="flex justify-between items-center mb-4 border-b pb-2">
-                            <h3 className="text-lg font-bold text-slate-700">Parent & Family Details</h3>
-                            {!selectedSiblingObj ? (
-                                <button type="button" onClick={() => setShowSiblingModal(true)} className="text-white bg-green-600 hover:bg-green-700 focus:ring-4 focus:ring-green-300 font-medium rounded-lg text-xs px-3 py-1.5 focus:outline-none">
-                                    + Add Sibling
-                                </button>
-                            ) : (
-                                <div className="flex items-center space-x-2">
-                                    <span className="text-xs font-semibold bg-green-100 text-green-800 px-2 py-1 rounded border border-green-200">
-                                        Linked Sibling: {selectedSiblingObj.firstName} {selectedSiblingObj.lastName} (ID: {selectedSiblingObj.id})
-                                    </span>
-                                    <button type="button" onClick={clearSibling} className="text-red-600 hover:text-red-800 text-xs font-medium underline">Remove Link</button>
-                                </div>
-                            )}
-                        </div>
+                        <h3 className="text-lg font-bold mb-4 text-slate-700 border-b pb-2">Parent &amp; Family Details</h3>
+
+                        {/* Linked sibling badge */}
+                        {selectedSiblingObj && (
+                            <div className="flex items-center space-x-2 mb-4">
+                                <span className="text-xs font-semibold bg-green-100 text-green-800 px-2 py-1 rounded border border-green-200">
+                                    Linked Sibling: {selectedSiblingObj.firstName} {selectedSiblingObj.lastName} (ID: {selectedSiblingObj.id})
+                                </span>
+                                <button type="button" onClick={clearSibling} className="text-red-600 hover:text-red-800 text-xs font-medium underline">Remove Link</button>
+                            </div>
+                        )}
+
                         <div className="grid gap-6 md:grid-cols-2">
                             <div>
                                 <label htmlFor="fathersName" className="block mb-2 text-sm font-medium text-gray-900">Father's Name <span className="text-red-500">*</span></label>
@@ -237,8 +292,26 @@ export default function AddStudentPage() {
                                 <input type="text" id="mothersName" name="mothersName" value={formData.mothersName} onChange={handleChange} disabled={!!selectedSiblingObj} className="bg-gray-50 border border-gray-300 text-sm rounded-lg block w-full p-2.5 disabled:bg-gray-200 disabled:text-gray-500 disabled:cursor-not-allowed" required />
                             </div>
                         </div>
+
                         {selectedSiblingObj && (
                             <p className="mt-2 text-xs text-blue-600 italic">Parent names are locked and synced with the linked sibling.</p>
+                        )}
+
+                        {/* Add Sibling button — placed AFTER parent name fields */}
+                        {!selectedSiblingObj && (
+                            <div className="mt-4">
+                                {siblingModalError && (
+                                    <p className="text-xs text-red-600 mb-2">{siblingModalError}</p>
+                                )}
+                                <button
+                                    type="button"
+                                    onClick={openSiblingModal}
+                                    className="text-white bg-green-600 hover:bg-green-700 focus:ring-4 focus:ring-green-300 font-medium rounded-lg text-xs px-3 py-1.5 focus:outline-none"
+                                >
+                                    + Add Sibling
+                                </button>
+                                <p className="text-xs text-gray-400 mt-1">Fill in Father&apos;s and Mother&apos;s Name first, then search for a sibling with matching parents.</p>
+                            </div>
                         )}
                     </div>
 
@@ -291,12 +364,18 @@ export default function AddStudentPage() {
                                 <label className="block mb-3 text-sm font-bold text-blue-900">Applicable Fee Discounts</label>
                                 <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
                                     {availableDiscounts.map(d => (
-                                        <label key={d.id} className="flex items-center p-3 border border-blue-200 bg-white rounded-lg cursor-pointer hover:bg-blue-100 transition-colors">
-                                            <input type="checkbox" checked={selectedDiscounts.includes(d.id)} onChange={(e) => {
-                                                if (e.target.checked) setSelectedDiscounts([...selectedDiscounts, d.id]);
-                                                else setSelectedDiscounts(selectedDiscounts.filter(id => id !== d.id));
-                                            }} className="w-4 h-4 text-blue-600 bg-gray-100 border-gray-300 rounded focus:ring-blue-500" />
-                                            <span className="ml-2 text-sm font-medium text-gray-900">{d.name} ({d.type === 'PERCENTAGE' ? `${d.value}%` : `$${d.value}`})</span>
+                                        <label key={d.id} className="flex flex-col p-3 border border-blue-200 bg-white rounded-lg cursor-pointer hover:bg-blue-100 transition-colors">
+                                            <div className="flex items-center">
+                                                <input type="checkbox" checked={selectedDiscounts.includes(d.id)} onChange={(e) => {
+                                                    if (e.target.checked) setSelectedDiscounts([...selectedDiscounts, d.id]);
+                                                    else setSelectedDiscounts(selectedDiscounts.filter(id => id !== d.id));
+                                                }} className="w-4 h-4 text-blue-600 bg-gray-100 border-gray-300 rounded focus:ring-blue-500" />
+                                                <span className="ml-2 text-sm font-medium text-gray-900">{d.name}</span>
+                                            </div>
+                                            <span className="mt-1 ml-6 text-xs text-gray-500">
+                                                {d.type === 'PERCENTAGE' ? `${d.value}%` : `$${d.value}`}
+                                                {d.applicationType === 'AUTO' && <span className="ml-1 text-[10px] bg-blue-100 text-blue-800 px-1 rounded font-bold">{d.logicReference}</span>}
+                                            </span>
                                         </label>
                                     ))}
                                 </div>
@@ -319,33 +398,87 @@ export default function AddStudentPage() {
                     <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black bg-opacity-50">
                         <div className="bg-white rounded-lg shadow-xl w-full max-w-2xl max-h-[90vh] flex flex-col">
                             <div className="flex items-center justify-between p-4 border-b">
-                                <h3 className="text-xl font-semibold text-gray-900">Search Existing Sibling</h3>
+                                <div>
+                                    <h3 className="text-xl font-semibold text-gray-900">Search Existing Sibling</h3>
+                                    <p className="text-xs text-gray-500 mt-0.5">
+                                        Searching for siblings of: <span className="font-medium text-gray-700">{formData.fathersName}</span> &amp; <span className="font-medium text-gray-700">{formData.mothersName}</span>
+                                    </p>
+                                </div>
                                 <button type="button" onClick={() => setShowSiblingModal(false)} className="text-gray-400 bg-transparent hover:bg-gray-200 hover:text-gray-900 rounded-lg text-sm w-8 h-8 ml-auto inline-flex justify-center items-center">
                                     <svg className="w-3 h-3" aria-hidden="true" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 14 14"><path stroke="currentColor" strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="m1 1 6 6m0 0 6 6M7 7l6-6M7 7l-6 6" /></svg>
                                     <span className="sr-only">Close modal</span>
                                 </button>
                             </div>
                             <div className="p-6 flex-1 overflow-y-auto">
+                                {/* Search mode toggle */}
+                                <div className="flex mb-3 rounded-lg overflow-hidden border border-gray-300 w-fit">
+                                    <button
+                                        type="button"
+                                        onClick={() => { setSiblingSearchMode('name'); setSiblingSearch(''); setSiblingResults([]); }}
+                                        className={`px-4 py-1.5 text-sm font-medium transition-colors ${siblingSearchMode === 'name'
+                                            ? 'bg-blue-700 text-white'
+                                            : 'bg-white text-gray-600 hover:bg-gray-100'
+                                            }`}
+                                    >
+                                        Search by Name
+                                    </button>
+                                    <button
+                                        type="button"
+                                        onClick={() => { setSiblingSearchMode('id'); setSiblingSearch(''); setSiblingResults([]); }}
+                                        className={`px-4 py-1.5 text-sm font-medium transition-colors ${siblingSearchMode === 'id'
+                                            ? 'bg-blue-700 text-white'
+                                            : 'bg-white text-gray-600 hover:bg-gray-100'
+                                            }`}
+                                    >
+                                        Search by ID
+                                    </button>
+                                </div>
                                 <form className="flex items-center space-x-2 mb-4" onSubmit={(e) => { e.preventDefault(); handleSearchSibling(); }}>
-                                    <input type="text" value={siblingSearch} onChange={e => setSiblingSearch(e.target.value)} placeholder="Search Sibling by Name (e.g. John)" className="bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-lg focus:ring-blue-500 focus:border-blue-500 block w-full p-2.5" />
+                                    <input
+                                        type={siblingSearchMode === 'id' ? 'number' : 'text'}
+                                        value={siblingSearch}
+                                        onChange={e => setSiblingSearch(e.target.value)}
+                                        placeholder={siblingSearchMode === 'id' ? 'Enter student ID (e.g. 42)' : 'Search by first or last name (e.g. Raj)'}
+                                        className="bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-lg focus:ring-blue-500 focus:border-blue-500 block w-full p-2.5"
+                                    />
                                     <button type="submit" className="text-white bg-blue-700 hover:bg-blue-800 font-medium rounded-lg text-sm px-5 py-2.5" disabled={siblingLoading}>{siblingLoading ? '...' : 'Search'}</button>
                                 </form>
 
                                 <div className="mt-4">
                                     {siblingResults.length > 0 ? (
-                                        <ul className="divide-y divide-gray-200 border rounded-lg max-h-64 overflow-y-auto">
-                                            {siblingResults.map(s => (
-                                                <li key={s.id} className="p-3 hover:bg-gray-50 flex justify-between items-center transition-colors">
-                                                    <div>
-                                                        <p className="text-sm font-medium text-gray-900">{s.firstName} {s.lastName}</p>
-                                                        <p className="text-xs text-gray-500">ID: {s.id} | Parents: {s.fathersName || 'N/A'}, {s.mothersName || 'N/A'}</p>
-                                                    </div>
-                                                    <button type="button" onClick={() => selectSibling(s)} className="text-white bg-green-600 hover:bg-green-700 font-medium rounded-lg text-xs px-3 py-1.5 focus:outline-none">
-                                                        Select
-                                                    </button>
-                                                </li>
-                                            ))}
-                                        </ul>
+                                        <>
+                                            <p className="text-xs text-gray-500 mb-2">
+                                                <span className="inline-flex items-center mr-3"><span className="w-2 h-2 rounded-full bg-green-500 inline-block mr-1"></span>Names match — can be linked</span>
+                                                <span className="inline-flex items-center"><span className="w-2 h-2 rounded-full bg-red-400 inline-block mr-1"></span>Names don&apos;t match — cannot link</span>
+                                            </p>
+                                            <ul className="divide-y divide-gray-200 border rounded-lg max-h-64 overflow-y-auto">
+                                                {siblingResults.map(s => {
+                                                    const match = isSiblingMatch(s);
+                                                    return (
+                                                        <li key={s.id} className={`p-3 flex justify-between items-center transition-colors ${match ? 'hover:bg-green-50' : 'bg-red-50 opacity-70'}`}>
+                                                            <div>
+                                                                <div className="flex items-center gap-2">
+                                                                    <span className={`w-2 h-2 rounded-full flex-shrink-0 ${match ? 'bg-green-500' : 'bg-red-400'}`}></span>
+                                                                    <p className="text-sm font-medium text-gray-900">{s.firstName} {s.lastName}</p>
+                                                                </div>
+                                                                <p className="text-xs text-gray-500 ml-4">ID: {s.id} | Father: {s.fathersName || 'N/A'} | Mother: {s.mothersName || 'N/A'}</p>
+                                                                {!match && (
+                                                                    <p className="text-xs text-red-600 ml-4 mt-0.5">⚠ Parent names do not match — cannot select as sibling</p>
+                                                                )}
+                                                            </div>
+                                                            <button
+                                                                type="button"
+                                                                onClick={() => match && selectSibling(s)}
+                                                                disabled={!match}
+                                                                className={`font-medium rounded-lg text-xs px-3 py-1.5 focus:outline-none flex-shrink-0 ml-2 ${match ? 'text-white bg-green-600 hover:bg-green-700' : 'text-gray-400 bg-gray-200 cursor-not-allowed'}`}
+                                                            >
+                                                                Select
+                                                            </button>
+                                                        </li>
+                                                    );
+                                                })}
+                                            </ul>
+                                        </>
                                     ) : (
                                         <p className="text-sm text-gray-500 italic text-center py-4">Search to find siblings.</p>
                                     )}

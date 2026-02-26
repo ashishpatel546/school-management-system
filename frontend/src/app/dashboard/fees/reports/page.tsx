@@ -2,42 +2,28 @@
 
 import { useState, useEffect } from "react";
 import Link from "next/link";
+import useSWR from "swr";
+import { fetcher } from "@/lib/api";
+import { Loader } from "@/components/ui/Loader";
 
 export default function FeeReportsDashboard() {
-    const [report, setReport] = useState<any>(null);
-    const [loading, setLoading] = useState(true);
-    const [error, setError] = useState("");
     const [academicYear, setAcademicYear] = useState("2026-2027");
 
-    useEffect(() => {
-        const fetchReport = async () => {
-            setLoading(true);
-            try {
-                const res = await fetch(`http://localhost:3000/fees/reports/dashboard?academicYear=${academicYear}`);
-                if (!res.ok) throw new Error("Failed to fetch fee report");
-                const data = await res.json();
-                setReport(data);
-            } catch (err: any) {
-                setError(err.message || 'An error occurred');
-            } finally {
-                setLoading(false);
-            }
-        };
-        fetchReport();
-    }, [academicYear]);
+    const { data: report, error, isLoading: loading } = useSWR(
+        `/fees/reports/dashboard?academicYear=${academicYear}`,
+        fetcher
+    );
 
     if (loading) {
         return (
-            <div className="flex justify-center items-center h-full min-h-[400px]">
-                <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600"></div>
-            </div>
+            <Loader fullScreen={true} />
         );
     }
 
     if (error || !report) {
         return (
             <div className="p-6 text-center text-red-500">
-                <p>{error || "Could not load report data"}</p>
+                <p>Could not load report data</p>
                 <button onClick={() => window.location.reload()} className="mt-4 px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700">Retry</button>
             </div>
         );

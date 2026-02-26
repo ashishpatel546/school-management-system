@@ -53,4 +53,7 @@ export class CreateStudentDto {
 
     @IsOptional()
     siblingId?: number;
+
+    @IsOptional()
+    discountIds?: number[];
 }
