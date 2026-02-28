@@ -17,7 +17,12 @@ export default function DashboardLayout({
         setIsSidebarOpen(false);
     }, [pathname]);
 
-    const isActive = (path: string) => pathname === path || pathname.startsWith(`${path}/`);
+    const isActive = (path: string) => {
+        if (path === '/dashboard') {
+            return pathname === '/dashboard';
+        }
+        return pathname === path || pathname.startsWith(`${path}/`);
+    };
 
     const getLinkClass = (path: string) => {
         const baseClass = "flex items-center p-2 rounded-lg group";
@@ -101,6 +106,11 @@ export default function DashboardLayout({
                             <li>
                                 <Link href="/dashboard/fees" className={getLinkClass("/dashboard/fees")}>
                                     <span className="ml-3">Fees</span>
+                                </Link>
+                            </li>
+                            <li>
+                                <Link href="/dashboard/examinations" className={getLinkClass("/dashboard/examinations")}>
+                                    <span className="ml-3">Examinations</span>
                                 </Link>
                             </li>
                             <li className="pt-4 mt-4 space-y-2 border-t border-gray-200">

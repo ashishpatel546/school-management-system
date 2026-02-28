@@ -12,3 +12,13 @@ On login page, make it more attractive with add some image and better design.
 
 Task4: 
 While clicking on any menu like 'Teachers', it got selected and highlights on left hand side, but 'Dashboard' also appears selected. Generally if we navigate to some other page, the previous page should not be highlighted. It should be like if we click on 'Teachers' then only 'Teachers' should be highlighted. And if we navigate to 'Dashboard' from 'Teachers' page, then 'Teachers' should not be highlighted and 'Dashboard' should be highlighted. 
+
+Task 5: A student can't be promote into next class using bulk promote or exit option untill he is not clear his dues.
+
+Task 6. Make super admin and it can be only one super admin. 
+
+Task 6. Make login page for parents.
+
+Task 8. Examination Report.
+
+Task 9. Once marks are filled for the student, and saved, it is not reflecting on data showing on page for the studnet. It must be auto refreshed.

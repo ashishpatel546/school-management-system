@@ -1,11 +1,11 @@
-import { Controller, Get, Post, Body, Patch, Param, Delete } from '@nestjs/common';
+import { Controller, Get, Post, Body, Patch, Param, Delete, Query } from '@nestjs/common';
 import { AcademicSessionsService } from './academic-sessions.service';
 import { CreateAcademicSessionDto } from './dto/create-academic-session.dto';
 import { UpdateAcademicSessionDto } from './dto/update-academic-session.dto';
 
 @Controller('academic-sessions')
 export class AcademicSessionsController {
-  constructor(private readonly academicSessionsService: AcademicSessionsService) {}
+  constructor(private readonly academicSessionsService: AcademicSessionsService) { }
 
   @Post()
   create(@Body() createAcademicSessionDto: CreateAcademicSessionDto) {
@@ -15,6 +15,11 @@ export class AcademicSessionsController {
   @Get()
   findAll() {
     return this.academicSessionsService.findAll();
+  }
+
+  @Get('by-date')
+  getSessionByDate(@Query('date') date: string) {
+    return this.academicSessionsService.getSessionByDate(date);
   }
 
   @Get(':id')

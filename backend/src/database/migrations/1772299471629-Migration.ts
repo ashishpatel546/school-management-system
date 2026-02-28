@@ -1,52 +1,57 @@
 import { MigrationInterface, QueryRunner } from "typeorm";
 
-export class InitialMigration1771871261679 implements MigrationInterface {
-    name = 'InitialMigration1771871261679'
+export class Migration1772299471629 implements MigrationInterface {
+    name = 'Migration1772299471629'
 
     public async up(queryRunner: QueryRunner): Promise<void> {
         await queryRunner.query(`CREATE TYPE "public"."user_role_enum" AS ENUM('SUPER_ADMIN', 'ADMIN', 'STUDENT', 'TEACHER', 'PARENT')`);
-        await queryRunner.query(`CREATE TABLE "user" ("id" SERIAL NOT NULL, "firstName" character varying NOT NULL, "lastName" character varying NOT NULL, "email" character varying NOT NULL, "role" "public"."user_role_enum" NOT NULL DEFAULT 'STUDENT', "isActive" boolean NOT NULL DEFAULT true, "createdAt" TIMESTAMP NOT NULL DEFAULT now(), "updatedAt" TIMESTAMP NOT NULL DEFAULT now(), CONSTRAINT "UQ_e12875dfb3b1d92d7d7c5377e22" UNIQUE ("email"), CONSTRAINT "PK_cace4a159ff9f2512dd42373760" PRIMARY KEY ("id"))`);
-        await queryRunner.query(`CREATE TABLE "fee_category" ("id" SERIAL NOT NULL, "name" character varying NOT NULL, "description" character varying, CONSTRAINT "UQ_76b18b9ffd62e8338dffb8a6900" UNIQUE ("name"), CONSTRAINT "PK_ea102044cbccad1a2f3a96830f7" PRIMARY KEY ("id"))`);
-        await queryRunner.query(`CREATE TYPE "public"."extra_subject_subjectcategory_enum" AS ENUM('BASE', 'OPTIONAL', 'VOCATIONAL', 'ACTIVITY')`);
-        await queryRunner.query(`CREATE TABLE "extra_subject" ("id" SERIAL NOT NULL, "name" character varying NOT NULL, "subjectCategory" "public"."extra_subject_subjectcategory_enum" NOT NULL DEFAULT 'BASE', "feeCategoryId" integer, CONSTRAINT "PK_06da45b47c249db27815fd45246" PRIMARY KEY ("id"))`);
+        await queryRunner.query(`CREATE TYPE "public"."user_religion_enum" AS ENUM('HINDU', 'MUSLIM', 'SIKH', 'CHRISTIAN', 'PARSI', 'OTHERS')`);
+        await queryRunner.query(`CREATE TABLE "user" ("id" SERIAL NOT NULL, "firstName" character varying NOT NULL, "lastName" character varying NOT NULL, "email" character varying, "role" "public"."user_role_enum" NOT NULL DEFAULT 'STUDENT', "isActive" boolean NOT NULL DEFAULT true, "mobile" character varying, "alternateMobile" character varying, "gender" character varying, "fathersName" character varying, "mothersName" character varying, "aadhaarNumber" character varying, "category" character varying, "religion" "public"."user_religion_enum", "bloodGroup" character varying, "dateOfBirth" date, "createdAt" TIMESTAMP NOT NULL DEFAULT now(), "updatedAt" TIMESTAMP NOT NULL DEFAULT now(), CONSTRAINT "UQ_e12875dfb3b1d92d7d7c5377e22" UNIQUE ("email"), CONSTRAINT "PK_cace4a159ff9f2512dd42373760" PRIMARY KEY ("id"))`);
+        await queryRunner.query(`CREATE TABLE "fee_category" ("id" SERIAL NOT NULL, "name" character varying NOT NULL, "description" character varying, "isActive" boolean NOT NULL DEFAULT true, CONSTRAINT "UQ_76b18b9ffd62e8338dffb8a6900" UNIQUE ("name"), CONSTRAINT "PK_ea102044cbccad1a2f3a96830f7" PRIMARY KEY ("id"))`);
+        await queryRunner.query(`CREATE TYPE "public"."subject_subjectcategory_enum" AS ENUM('BASE', 'OPTIONAL', 'VOCATIONAL', 'ACTIVITY')`);
+        await queryRunner.query(`CREATE TABLE "subject" ("id" SERIAL NOT NULL, "name" character varying NOT NULL, "subjectCategory" "public"."subject_subjectcategory_enum" NOT NULL DEFAULT 'BASE', "feeCategoryId" integer, CONSTRAINT "PK_12eee115462e38d62e5455fc054" PRIMARY KEY ("id"))`);
         await queryRunner.query(`CREATE TABLE "student_subject" ("id" SERIAL NOT NULL, "studentId" integer, "extraSubjectId" integer, CONSTRAINT "PK_d334fa27fb45a92687fd437f5ba" PRIMARY KEY ("id"))`);
-        await queryRunner.query(`CREATE TYPE "public"."discount_category_type_enum" AS ENUM('PERCENTAGE', 'FLAT')`);
-        await queryRunner.query(`CREATE TABLE "discount_category" ("id" SERIAL NOT NULL, "name" character varying NOT NULL, "type" "public"."discount_category_type_enum" NOT NULL DEFAULT 'FLAT', "value" numeric(10,2) NOT NULL, CONSTRAINT "PK_51c8620dc63bb7eadc8d3a2e919" PRIMARY KEY ("id"))`);
         await queryRunner.query(`CREATE TABLE "academic_session" ("id" SERIAL NOT NULL, "name" character varying NOT NULL, "startDate" date NOT NULL, "endDate" date NOT NULL, "isActive" boolean NOT NULL DEFAULT false, "createdAt" TIMESTAMP NOT NULL DEFAULT now(), "updatedAt" TIMESTAMP NOT NULL DEFAULT now(), CONSTRAINT "UQ_f79eeb7f7c300eb2315723d95ba" UNIQUE ("name"), CONSTRAINT "PK_a28079d446dfbb8f52ff41398c2" PRIMARY KEY ("id"))`);
         await queryRunner.query(`CREATE TYPE "public"."student_enrollment_status_enum" AS ENUM('ACTIVE', 'PROMOTED', 'DETAINED', 'ALUMNI', 'WITHDRAWN')`);
-        await queryRunner.query(`CREATE TABLE "student_enrollment" ("id" SERIAL NOT NULL, "status" "public"."student_enrollment_status_enum" NOT NULL DEFAULT 'ACTIVE', "createdAt" TIMESTAMP NOT NULL DEFAULT now(), "updatedAt" TIMESTAMP NOT NULL DEFAULT now(), "studentId" integer, "classId" integer, "sectionId" integer, "academicSessionId" integer, CONSTRAINT "PK_8d2ebd470040ec79545843248c3" PRIMARY KEY ("id"))`);
-        await queryRunner.query(`CREATE TABLE "student" ("id" SERIAL NOT NULL, "firstName" character varying NOT NULL, "lastName" character varying NOT NULL, "email" character varying NOT NULL, "isActive" boolean NOT NULL DEFAULT true, "classId" integer, "sectionId" integer, CONSTRAINT "UQ_a56c051c91dbe1068ad683f536e" UNIQUE ("email"), CONSTRAINT "PK_3d8016e1cb58429474a3c041904" PRIMARY KEY ("id"))`);
+        await queryRunner.query(`CREATE TABLE "student_enrollment" ("id" SERIAL NOT NULL, "rollNo" integer NOT NULL DEFAULT '0', "status" "public"."student_enrollment_status_enum" NOT NULL DEFAULT 'ACTIVE', "createdAt" TIMESTAMP NOT NULL DEFAULT now(), "updatedAt" TIMESTAMP NOT NULL DEFAULT now(), "studentId" integer, "classId" integer, "sectionId" integer, "academicSessionId" integer, CONSTRAINT "PK_8d2ebd470040ec79545843248c3" PRIMARY KEY ("id"))`);
+        await queryRunner.query(`CREATE TYPE "public"."discount_category_type_enum" AS ENUM('PERCENTAGE', 'FLAT')`);
+        await queryRunner.query(`CREATE TYPE "public"."discount_category_applicationtype_enum" AS ENUM('AUTO', 'MANUAL')`);
+        await queryRunner.query(`CREATE TABLE "discount_category" ("id" SERIAL NOT NULL, "name" character varying NOT NULL, "type" "public"."discount_category_type_enum" NOT NULL DEFAULT 'FLAT', "value" numeric(10,2) NOT NULL, "applicationType" "public"."discount_category_applicationtype_enum" NOT NULL DEFAULT 'MANUAL', "logicReference" character varying, "isActive" boolean NOT NULL DEFAULT true, CONSTRAINT "PK_51c8620dc63bb7eadc8d3a2e919" PRIMARY KEY ("id"))`);
+        await queryRunner.query(`CREATE TABLE "student_discounts" ("id" SERIAL NOT NULL, "isActive" boolean NOT NULL DEFAULT true, "createdOn" TIMESTAMP NOT NULL DEFAULT now(), "updatedOn" TIMESTAMP NOT NULL DEFAULT now(), "studentId" integer, "discountCategoryId" integer, CONSTRAINT "PK_d9791052660736e702c448d15cc" PRIMARY KEY ("id"))`);
+        await queryRunner.query(`CREATE TABLE "student" ("id" SERIAL NOT NULL, "siblingId" integer, "userId" integer, "classId" integer, "sectionId" integer, CONSTRAINT "REL_b35463776b4a11a3df3c30d920" UNIQUE ("userId"), CONSTRAINT "PK_3d8016e1cb58429474a3c041904" PRIMARY KEY ("id"))`);
         await queryRunner.query(`CREATE TABLE "class" ("id" SERIAL NOT NULL, "name" character varying NOT NULL, CONSTRAINT "PK_0b9024d21bdfba8b1bd1c300eae" PRIMARY KEY ("id"))`);
         await queryRunner.query(`CREATE TABLE "section" ("id" SERIAL NOT NULL, "name" character varying NOT NULL, "classId" integer, "classTeacherId" integer, CONSTRAINT "PK_3c41d2d699384cc5e8eac54777d" PRIMARY KEY ("id"))`);
-        await queryRunner.query(`CREATE TABLE "subject_assignment" ("id" SERIAL NOT NULL, "isActive" boolean NOT NULL DEFAULT true, "startDate" TIMESTAMP NOT NULL DEFAULT now(), "endDate" TIMESTAMP, "teacherId" integer, "subjectId" integer, "classId" integer, "sectionId" integer, CONSTRAINT "PK_2255cbac9f6cf0075e0bfd9ebc6" PRIMARY KEY ("id"))`);
-        await queryRunner.query(`CREATE TABLE "teacher" ("id" SERIAL NOT NULL, "firstName" character varying NOT NULL, "lastName" character varying NOT NULL, "email" character varying NOT NULL, "isActive" boolean NOT NULL DEFAULT true, CONSTRAINT "UQ_00634394dce7677d531749ed8e8" UNIQUE ("email"), CONSTRAINT "PK_2f807294148612a9751dacf1026" PRIMARY KEY ("id"))`);
+        await queryRunner.query(`CREATE TABLE "subject_assignment" ("id" SERIAL NOT NULL, "isActive" boolean NOT NULL DEFAULT true, "startDate" TIMESTAMP NOT NULL DEFAULT now(), "endDate" TIMESTAMP, "teacherId" integer, "subjectId" integer, "classId" integer, "sectionId" integer, "academicSessionId" integer, CONSTRAINT "PK_2255cbac9f6cf0075e0bfd9ebc6" PRIMARY KEY ("id"))`);
+        await queryRunner.query(`CREATE TABLE "teacher" ("id" SERIAL NOT NULL, "employeeCode" integer, "department" character varying, "joiningDate" date, "exitDate" date, "qualification" character varying, "userId" integer, CONSTRAINT "UQ_52d41e9017357afa82f37072073" UNIQUE ("employeeCode"), CONSTRAINT "REL_4f596730e16ee49d9b081b5d8e" UNIQUE ("userId"), CONSTRAINT "PK_2f807294148612a9751dacf1026" PRIMARY KEY ("id"))`);
         await queryRunner.query(`CREATE TABLE "student_enrollment_history" ("id" SERIAL NOT NULL, "startDate" TIMESTAMP NOT NULL, "endDate" TIMESTAMP, "isActive" boolean NOT NULL DEFAULT true, "createdAt" TIMESTAMP NOT NULL DEFAULT now(), "studentId" integer, "classId" integer, "sectionId" integer, CONSTRAINT "PK_0fac21cf33e0bf71fc35f808dae" PRIMARY KEY ("id"))`);
         await queryRunner.query(`CREATE TABLE "class_teacher_history" ("id" SERIAL NOT NULL, "startDate" TIMESTAMP NOT NULL, "endDate" TIMESTAMP, "isActive" boolean NOT NULL DEFAULT true, "createdAt" TIMESTAMP NOT NULL DEFAULT now(), "teacherId" integer, "sectionId" integer, CONSTRAINT "PK_bdac07d4b8accbdf73c8281d2e3" PRIMARY KEY ("id"))`);
         await queryRunner.query(`CREATE TABLE "global_fee_settings" ("id" SERIAL NOT NULL, "feeDueDate" integer NOT NULL DEFAULT '15', "lateFeePerDay" numeric(10,2) NOT NULL DEFAULT '20', CONSTRAINT "PK_667d6ab59c97a36b373a4b4aeb5" PRIMARY KEY ("id"))`);
         await queryRunner.query(`CREATE TABLE "fee_structure" ("id" SERIAL NOT NULL, "amount" numeric(10,2) NOT NULL, "academicYear" character varying NOT NULL, "classId" integer, "feeCategoryId" integer, CONSTRAINT "PK_a32d707ce58ab84c493b492cfc5" PRIMARY KEY ("id"))`);
         await queryRunner.query(`CREATE TYPE "public"."fee_payment_paymentmethod_enum" AS ENUM('CASH', 'CARD', 'ONLINE', 'CHEQUE')`);
-        await queryRunner.query(`CREATE TABLE "fee_payment" ("id" SERIAL NOT NULL, "feeMonth" character varying NOT NULL, "academicYear" character varying NOT NULL DEFAULT '2026-2027', "amountPaid" numeric(10,2) NOT NULL, "paymentDate" TIMESTAMP NOT NULL DEFAULT now(), "paymentMethod" "public"."fee_payment_paymentmethod_enum" NOT NULL DEFAULT 'CASH', "receiptNumber" character varying NOT NULL, "remarks" character varying, "studentId" integer, CONSTRAINT "UQ_ac34ec8ad1de10af63bac64acd8" UNIQUE ("receiptNumber"), CONSTRAINT "PK_04a477e9910932c09e80e282d36" PRIMARY KEY ("id"))`);
+        await queryRunner.query(`CREATE TABLE "fee_payment" ("id" SERIAL NOT NULL, "feeMonth" character varying NOT NULL, "academicYear" character varying NOT NULL DEFAULT '2026-2027', "amountPaid" numeric(10,2) NOT NULL, "discountNames" character varying, "discountAmount" numeric(10,2) NOT NULL DEFAULT '0', "baseFeeAmount" numeric(10,2) NOT NULL DEFAULT '0', "otherFeeAmount" numeric(10,2) NOT NULL DEFAULT '0', "feeBreakdown" jsonb, "paymentDate" TIMESTAMP NOT NULL DEFAULT now(), "paymentMethod" "public"."fee_payment_paymentmethod_enum" NOT NULL DEFAULT 'CASH', "receiptNumber" character varying NOT NULL, "remarks" character varying, "studentId" integer, CONSTRAINT "UQ_ac34ec8ad1de10af63bac64acd8" UNIQUE ("receiptNumber"), CONSTRAINT "PK_04a477e9910932c09e80e282d36" PRIMARY KEY ("id"))`);
         await queryRunner.query(`CREATE TABLE "attendance" ("id" SERIAL NOT NULL, "date" date NOT NULL, "timestamp" TIMESTAMP NOT NULL DEFAULT now(), "takenById" integer, "classId" integer, "sectionId" integer, CONSTRAINT "PK_ee0ffe42c1f1a01e72b725c0cb2" PRIMARY KEY ("id"))`);
         await queryRunner.query(`CREATE TYPE "public"."student_attendance_status_enum" AS ENUM('PRESENT', 'ABSENT', 'LATE', 'HALF_DAY')`);
         await queryRunner.query(`CREATE TABLE "student_attendance" ("id" SERIAL NOT NULL, "status" "public"."student_attendance_status_enum" NOT NULL DEFAULT 'PRESENT', "remarks" character varying, "attendanceId" integer, "studentId" integer, CONSTRAINT "PK_432904873d2981c3443763ef49d" PRIMARY KEY ("id"))`);
-        await queryRunner.query(`CREATE TABLE "student_discounts_discount_category" ("studentId" integer NOT NULL, "discountCategoryId" integer NOT NULL, CONSTRAINT "PK_ca8aed07e61886260f2dd54eaba" PRIMARY KEY ("studentId", "discountCategoryId"))`);
-        await queryRunner.query(`CREATE INDEX "IDX_507eb8f1b506db767876cf403f" ON "student_discounts_discount_category" ("studentId") `);
-        await queryRunner.query(`CREATE INDEX "IDX_8b830cfe4aee4c2674955a1d1b" ON "student_discounts_discount_category" ("discountCategoryId") `);
-        await queryRunner.query(`ALTER TABLE "extra_subject" ADD CONSTRAINT "FK_82a6af4ad69f4c8dd1718e95d44" FOREIGN KEY ("feeCategoryId") REFERENCES "fee_category"("id") ON DELETE NO ACTION ON UPDATE NO ACTION`);
+        await queryRunner.query(`ALTER TABLE "subject" ADD CONSTRAINT "FK_34316b3504ab03883ad30bc39d3" FOREIGN KEY ("feeCategoryId") REFERENCES "fee_category"("id") ON DELETE NO ACTION ON UPDATE NO ACTION`);
         await queryRunner.query(`ALTER TABLE "student_subject" ADD CONSTRAINT "FK_6c0174e4b12826cd561cebd4ba2" FOREIGN KEY ("studentId") REFERENCES "student"("id") ON DELETE NO ACTION ON UPDATE NO ACTION`);
-        await queryRunner.query(`ALTER TABLE "student_subject" ADD CONSTRAINT "FK_062fc6e4247d0fb1214244e45a4" FOREIGN KEY ("extraSubjectId") REFERENCES "extra_subject"("id") ON DELETE NO ACTION ON UPDATE NO ACTION`);
+        await queryRunner.query(`ALTER TABLE "student_subject" ADD CONSTRAINT "FK_062fc6e4247d0fb1214244e45a4" FOREIGN KEY ("extraSubjectId") REFERENCES "subject"("id") ON DELETE NO ACTION ON UPDATE NO ACTION`);
         await queryRunner.query(`ALTER TABLE "student_enrollment" ADD CONSTRAINT "FK_8c0d7ae2fa742a72d91ffdf0ca0" FOREIGN KEY ("studentId") REFERENCES "student"("id") ON DELETE CASCADE ON UPDATE NO ACTION`);
         await queryRunner.query(`ALTER TABLE "student_enrollment" ADD CONSTRAINT "FK_ea62559f993a1fbec489beeae91" FOREIGN KEY ("classId") REFERENCES "class"("id") ON DELETE NO ACTION ON UPDATE NO ACTION`);
         await queryRunner.query(`ALTER TABLE "student_enrollment" ADD CONSTRAINT "FK_279b2eac97dbf170f67c5e0e8f5" FOREIGN KEY ("sectionId") REFERENCES "section"("id") ON DELETE NO ACTION ON UPDATE NO ACTION`);
         await queryRunner.query(`ALTER TABLE "student_enrollment" ADD CONSTRAINT "FK_1d4f66285368cd347f9035fb247" FOREIGN KEY ("academicSessionId") REFERENCES "academic_session"("id") ON DELETE NO ACTION ON UPDATE NO ACTION`);
+        await queryRunner.query(`ALTER TABLE "student_discounts" ADD CONSTRAINT "FK_b3534c08e5898bfa56221db1d12" FOREIGN KEY ("studentId") REFERENCES "student"("id") ON DELETE CASCADE ON UPDATE NO ACTION`);
+        await queryRunner.query(`ALTER TABLE "student_discounts" ADD CONSTRAINT "FK_7fd6236210c4d111a9ac6fa58d2" FOREIGN KEY ("discountCategoryId") REFERENCES "discount_category"("id") ON DELETE CASCADE ON UPDATE NO ACTION`);
+        await queryRunner.query(`ALTER TABLE "student" ADD CONSTRAINT "FK_b35463776b4a11a3df3c30d920a" FOREIGN KEY ("userId") REFERENCES "user"("id") ON DELETE NO ACTION ON UPDATE NO ACTION`);
         await queryRunner.query(`ALTER TABLE "student" ADD CONSTRAINT "FK_bd5c8f2ef67394162384a484ba1" FOREIGN KEY ("classId") REFERENCES "class"("id") ON DELETE NO ACTION ON UPDATE NO ACTION`);
         await queryRunner.query(`ALTER TABLE "student" ADD CONSTRAINT "FK_430e8c066063ef82018539fb5e9" FOREIGN KEY ("sectionId") REFERENCES "section"("id") ON DELETE NO ACTION ON UPDATE NO ACTION`);
         await queryRunner.query(`ALTER TABLE "section" ADD CONSTRAINT "FK_98cf25574423790eb1a2dc81ce5" FOREIGN KEY ("classId") REFERENCES "class"("id") ON DELETE NO ACTION ON UPDATE NO ACTION`);
         await queryRunner.query(`ALTER TABLE "section" ADD CONSTRAINT "FK_c9b972d0008ac67bde0d9f73a65" FOREIGN KEY ("classTeacherId") REFERENCES "teacher"("id") ON DELETE NO ACTION ON UPDATE NO ACTION`);
         await queryRunner.query(`ALTER TABLE "subject_assignment" ADD CONSTRAINT "FK_b2df142d8be8c40a3e591c5ede4" FOREIGN KEY ("teacherId") REFERENCES "teacher"("id") ON DELETE NO ACTION ON UPDATE NO ACTION`);
-        await queryRunner.query(`ALTER TABLE "subject_assignment" ADD CONSTRAINT "FK_84276dff1ca42c4047099d1d7ce" FOREIGN KEY ("subjectId") REFERENCES "extra_subject"("id") ON DELETE NO ACTION ON UPDATE NO ACTION`);
+        await queryRunner.query(`ALTER TABLE "subject_assignment" ADD CONSTRAINT "FK_84276dff1ca42c4047099d1d7ce" FOREIGN KEY ("subjectId") REFERENCES "subject"("id") ON DELETE NO ACTION ON UPDATE NO ACTION`);
         await queryRunner.query(`ALTER TABLE "subject_assignment" ADD CONSTRAINT "FK_d3556d0bc935fa47cd879ee329d" FOREIGN KEY ("classId") REFERENCES "class"("id") ON DELETE NO ACTION ON UPDATE NO ACTION`);
         await queryRunner.query(`ALTER TABLE "subject_assignment" ADD CONSTRAINT "FK_e76126d3b1745717297e09323c4" FOREIGN KEY ("sectionId") REFERENCES "section"("id") ON DELETE NO ACTION ON UPDATE NO ACTION`);
+        await queryRunner.query(`ALTER TABLE "subject_assignment" ADD CONSTRAINT "FK_e19cc9cb4f5ada8e26c1ab07d04" FOREIGN KEY ("academicSessionId") REFERENCES "academic_session"("id") ON DELETE NO ACTION ON UPDATE NO ACTION`);
+        await queryRunner.query(`ALTER TABLE "teacher" ADD CONSTRAINT "FK_4f596730e16ee49d9b081b5d8e5" FOREIGN KEY ("userId") REFERENCES "user"("id") ON DELETE NO ACTION ON UPDATE NO ACTION`);
         await queryRunner.query(`ALTER TABLE "student_enrollment_history" ADD CONSTRAINT "FK_12218706f9c21d560195d7609e9" FOREIGN KEY ("studentId") REFERENCES "student"("id") ON DELETE NO ACTION ON UPDATE NO ACTION`);
         await queryRunner.query(`ALTER TABLE "student_enrollment_history" ADD CONSTRAINT "FK_7a84758b8bfb7cd8d617b83ead9" FOREIGN KEY ("classId") REFERENCES "class"("id") ON DELETE NO ACTION ON UPDATE NO ACTION`);
         await queryRunner.query(`ALTER TABLE "student_enrollment_history" ADD CONSTRAINT "FK_6d4daf5077184fc0a01b12da72a" FOREIGN KEY ("sectionId") REFERENCES "section"("id") ON DELETE NO ACTION ON UPDATE NO ACTION`);
@@ -60,13 +65,9 @@ export class InitialMigration1771871261679 implements MigrationInterface {
         await queryRunner.query(`ALTER TABLE "attendance" ADD CONSTRAINT "FK_3f926e47900bab693840a58f579" FOREIGN KEY ("sectionId") REFERENCES "section"("id") ON DELETE NO ACTION ON UPDATE NO ACTION`);
         await queryRunner.query(`ALTER TABLE "student_attendance" ADD CONSTRAINT "FK_15ed2cec4b795ab0c19087c5557" FOREIGN KEY ("attendanceId") REFERENCES "attendance"("id") ON DELETE CASCADE ON UPDATE NO ACTION`);
         await queryRunner.query(`ALTER TABLE "student_attendance" ADD CONSTRAINT "FK_37db95ccd34d2f592c76006ff7f" FOREIGN KEY ("studentId") REFERENCES "student"("id") ON DELETE NO ACTION ON UPDATE NO ACTION`);
-        await queryRunner.query(`ALTER TABLE "student_discounts_discount_category" ADD CONSTRAINT "FK_507eb8f1b506db767876cf403fd" FOREIGN KEY ("studentId") REFERENCES "student"("id") ON DELETE CASCADE ON UPDATE CASCADE`);
-        await queryRunner.query(`ALTER TABLE "student_discounts_discount_category" ADD CONSTRAINT "FK_8b830cfe4aee4c2674955a1d1b9" FOREIGN KEY ("discountCategoryId") REFERENCES "discount_category"("id") ON DELETE NO ACTION ON UPDATE NO ACTION`);
     }
 
     public async down(queryRunner: QueryRunner): Promise<void> {
-        await queryRunner.query(`ALTER TABLE "student_discounts_discount_category" DROP CONSTRAINT "FK_8b830cfe4aee4c2674955a1d1b9"`);
-        await queryRunner.query(`ALTER TABLE "student_discounts_discount_category" DROP CONSTRAINT "FK_507eb8f1b506db767876cf403fd"`);
         await queryRunner.query(`ALTER TABLE "student_attendance" DROP CONSTRAINT "FK_37db95ccd34d2f592c76006ff7f"`);
         await queryRunner.query(`ALTER TABLE "student_attendance" DROP CONSTRAINT "FK_15ed2cec4b795ab0c19087c5557"`);
         await queryRunner.query(`ALTER TABLE "attendance" DROP CONSTRAINT "FK_3f926e47900bab693840a58f579"`);
@@ -80,6 +81,8 @@ export class InitialMigration1771871261679 implements MigrationInterface {
         await queryRunner.query(`ALTER TABLE "student_enrollment_history" DROP CONSTRAINT "FK_6d4daf5077184fc0a01b12da72a"`);
         await queryRunner.query(`ALTER TABLE "student_enrollment_history" DROP CONSTRAINT "FK_7a84758b8bfb7cd8d617b83ead9"`);
         await queryRunner.query(`ALTER TABLE "student_enrollment_history" DROP CONSTRAINT "FK_12218706f9c21d560195d7609e9"`);
+        await queryRunner.query(`ALTER TABLE "teacher" DROP CONSTRAINT "FK_4f596730e16ee49d9b081b5d8e5"`);
+        await queryRunner.query(`ALTER TABLE "subject_assignment" DROP CONSTRAINT "FK_e19cc9cb4f5ada8e26c1ab07d04"`);
         await queryRunner.query(`ALTER TABLE "subject_assignment" DROP CONSTRAINT "FK_e76126d3b1745717297e09323c4"`);
         await queryRunner.query(`ALTER TABLE "subject_assignment" DROP CONSTRAINT "FK_d3556d0bc935fa47cd879ee329d"`);
         await queryRunner.query(`ALTER TABLE "subject_assignment" DROP CONSTRAINT "FK_84276dff1ca42c4047099d1d7ce"`);
@@ -88,16 +91,16 @@ export class InitialMigration1771871261679 implements MigrationInterface {
         await queryRunner.query(`ALTER TABLE "section" DROP CONSTRAINT "FK_98cf25574423790eb1a2dc81ce5"`);
         await queryRunner.query(`ALTER TABLE "student" DROP CONSTRAINT "FK_430e8c066063ef82018539fb5e9"`);
         await queryRunner.query(`ALTER TABLE "student" DROP CONSTRAINT "FK_bd5c8f2ef67394162384a484ba1"`);
+        await queryRunner.query(`ALTER TABLE "student" DROP CONSTRAINT "FK_b35463776b4a11a3df3c30d920a"`);
+        await queryRunner.query(`ALTER TABLE "student_discounts" DROP CONSTRAINT "FK_7fd6236210c4d111a9ac6fa58d2"`);
+        await queryRunner.query(`ALTER TABLE "student_discounts" DROP CONSTRAINT "FK_b3534c08e5898bfa56221db1d12"`);
         await queryRunner.query(`ALTER TABLE "student_enrollment" DROP CONSTRAINT "FK_1d4f66285368cd347f9035fb247"`);
         await queryRunner.query(`ALTER TABLE "student_enrollment" DROP CONSTRAINT "FK_279b2eac97dbf170f67c5e0e8f5"`);
         await queryRunner.query(`ALTER TABLE "student_enrollment" DROP CONSTRAINT "FK_ea62559f993a1fbec489beeae91"`);
         await queryRunner.query(`ALTER TABLE "student_enrollment" DROP CONSTRAINT "FK_8c0d7ae2fa742a72d91ffdf0ca0"`);
         await queryRunner.query(`ALTER TABLE "student_subject" DROP CONSTRAINT "FK_062fc6e4247d0fb1214244e45a4"`);
         await queryRunner.query(`ALTER TABLE "student_subject" DROP CONSTRAINT "FK_6c0174e4b12826cd561cebd4ba2"`);
-        await queryRunner.query(`ALTER TABLE "extra_subject" DROP CONSTRAINT "FK_82a6af4ad69f4c8dd1718e95d44"`);
-        await queryRunner.query(`DROP INDEX "public"."IDX_8b830cfe4aee4c2674955a1d1b"`);
-        await queryRunner.query(`DROP INDEX "public"."IDX_507eb8f1b506db767876cf403f"`);
-        await queryRunner.query(`DROP TABLE "student_discounts_discount_category"`);
+        await queryRunner.query(`ALTER TABLE "subject" DROP CONSTRAINT "FK_34316b3504ab03883ad30bc39d3"`);
         await queryRunner.query(`DROP TABLE "student_attendance"`);
         await queryRunner.query(`DROP TYPE "public"."student_attendance_status_enum"`);
         await queryRunner.query(`DROP TABLE "attendance"`);
@@ -112,16 +115,19 @@ export class InitialMigration1771871261679 implements MigrationInterface {
         await queryRunner.query(`DROP TABLE "section"`);
         await queryRunner.query(`DROP TABLE "class"`);
         await queryRunner.query(`DROP TABLE "student"`);
+        await queryRunner.query(`DROP TABLE "student_discounts"`);
+        await queryRunner.query(`DROP TABLE "discount_category"`);
+        await queryRunner.query(`DROP TYPE "public"."discount_category_applicationtype_enum"`);
+        await queryRunner.query(`DROP TYPE "public"."discount_category_type_enum"`);
         await queryRunner.query(`DROP TABLE "student_enrollment"`);
         await queryRunner.query(`DROP TYPE "public"."student_enrollment_status_enum"`);
         await queryRunner.query(`DROP TABLE "academic_session"`);
-        await queryRunner.query(`DROP TABLE "discount_category"`);
-        await queryRunner.query(`DROP TYPE "public"."discount_category_type_enum"`);
         await queryRunner.query(`DROP TABLE "student_subject"`);
-        await queryRunner.query(`DROP TABLE "extra_subject"`);
-        await queryRunner.query(`DROP TYPE "public"."extra_subject_subjectcategory_enum"`);
+        await queryRunner.query(`DROP TABLE "subject"`);
+        await queryRunner.query(`DROP TYPE "public"."subject_subjectcategory_enum"`);
         await queryRunner.query(`DROP TABLE "fee_category"`);
         await queryRunner.query(`DROP TABLE "user"`);
+        await queryRunner.query(`DROP TYPE "public"."user_religion_enum"`);
         await queryRunner.query(`DROP TYPE "public"."user_role_enum"`);
     }
 

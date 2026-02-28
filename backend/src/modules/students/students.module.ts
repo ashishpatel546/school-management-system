@@ -11,6 +11,7 @@ import { HistoryModule } from '../history/history.module';
 @Module({
   imports: [TypeOrmModule.forFeature([Student, StudentSubject, AcademicSession, StudentEnrollment]), HistoryModule],
   providers: [StudentsService],
-  controllers: [StudentsController]
+  controllers: [StudentsController],
+  exports: [StudentsService],
 })
 export class StudentsModule { }

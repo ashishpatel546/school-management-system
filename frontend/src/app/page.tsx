@@ -1,139 +1,144 @@
 "use client";
 
-import Link from "next/link";
 import { useState } from "react";
+import { useRouter } from "next/navigation";
+import { Mail, Lock, ArrowRight, BookOpen } from "lucide-react";
 
-export default function Home() {
-  const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
+export default function LoginPage() {
+  const router = useRouter();
+  const [email, setEmail] = useState("");
+  const [password, setPassword] = useState("");
+  const [isLoading, setIsLoading] = useState(false);
+
+  const handleLogin = (e: React.FormEvent) => {
+    e.preventDefault();
+    setIsLoading(true);
+    // Simulate network delay for effect
+    setTimeout(() => {
+      router.push("/dashboard");
+    }, 600);
+  };
 
   return (
-    <div className="min-h-screen bg-white text-slate-900 font-sans selection:bg-blue-100 selection:text-blue-900">
-      {/* Navigation */}
-      <nav className="fixed w-full z-50 bg-white/80 backdrop-blur-md border-b border-slate-100">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="flex items-center justify-between h-16">
-            <div className="flex items-center">
-              <span className="text-2xl font-bold text-slate-900 tracking-tight">
-                {process.env.NEXT_PUBLIC_SCHOOL_NAME || 'EduSphere'}
-              </span>
+    <div className="min-h-screen bg-slate-50 flex flex-col md:flex-row selection:bg-blue-100 selection:text-blue-900">
+      {/* Image & Branding (Top on mobile, Left on desktop) */}
+      <div className="flex w-full md:w-1/2 relative bg-slate-900 min-h-[350px] md:min-h-screen">
+        <img
+          src="/school-bg.png"
+          alt="School building"
+          className="absolute inset-0 w-full h-full object-cover opacity-60"
+        />
+        <div className="absolute inset-0 bg-gradient-to-t from-slate-900 via-slate-900/60 to-transparent"></div>
+        <div className="absolute inset-0 bg-blue-900/20 mix-blend-multiply"></div>
+
+        <div className="relative z-10 p-8 sm:p-12 xl:p-20 flex flex-col justify-end h-full text-white w-full">
+          <div className="flex items-center space-x-3 mb-4 md:mb-8 hover:transform hover:scale-105 transition-transform origin-left">
+            <div className="w-12 h-12 md:w-14 md:h-14 bg-blue-600 rounded-xl md:rounded-2xl flex items-center justify-center shadow-lg shadow-blue-500/30">
+              <BookOpen className="w-6 h-6 md:w-7 md:h-7 text-white" />
             </div>
-            <div className="hidden md:block">
-              <div className="ml-10 flex items-baseline space-x-8">
-                <Link href="#" className="text-slate-600 hover:text-blue-600 px-3 py-2 text-sm font-medium transition-colors">Features</Link>
-                <Link href="#" className="text-slate-600 hover:text-blue-600 px-3 py-2 text-sm font-medium transition-colors">About</Link>
-                <Link href="#" className="text-slate-600 hover:text-blue-600 px-3 py-2 text-sm font-medium transition-colors">Contact</Link>
-                <Link href="/dashboard" className="bg-blue-600 hover:bg-blue-700 text-white px-5 py-2.5 rounded-full text-sm font-medium transition-all shadow-sm hover:shadow-md">
-                  Login
-                </Link>
+            <span className="text-3xl md:text-4xl font-extrabold tracking-tight">
+              {process.env.NEXT_PUBLIC_SCHOOL_NAME || 'EduSphere'}
+            </span>
+          </div>
+          <h1 className="text-3xl md:text-4xl lg:text-5xl font-bold leading-tight mb-4 md:mb-6">
+            Manage your school<br />with absolute ease.
+          </h1>
+          <p className="text-slate-300 text-sm md:text-base lg:text-xl max-w-lg leading-relaxed">
+            The all-in-one platform for modern education management. Bringing administrators, teachers, and students together seamlessly.
+          </p>
+        </div>
+      </div>
+
+      {/* Login Form */}
+      <div className="w-full md:w-1/2 flex items-center justify-center p-6 sm:p-12 lg:p-24 bg-slate-50">
+        <div className="w-full max-w-md">
+          <div className="bg-white rounded-3xl p-8 sm:p-10 shadow-xl shadow-slate-200/50 border border-slate-100">
+            <h2 className="text-2xl font-bold text-slate-900 mb-2">Welcome Back</h2>
+            <p className="text-slate-500 mb-8 text-sm">Please sign in to your administrative account</p>
+
+            <form onSubmit={handleLogin} className="space-y-5">
+              <div>
+                <label className="block text-sm font-medium text-slate-700 mb-1.5" htmlFor="email">
+                  Email Address
+                </label>
+                <div className="relative group">
+                  <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                    <Mail className="h-5 w-5 text-slate-400 group-focus-within:text-blue-500 transition-colors" />
+                  </div>
+                  <input
+                    id="email"
+                    type="email"
+                    required
+                    value={email}
+                    onChange={(e) => setEmail(e.target.value)}
+                    className="block w-full pl-10 pr-3 py-3 border border-slate-200 rounded-xl focus:ring-2 focus:ring-blue-600 focus:border-transparent transition-all sm:text-sm bg-slate-50 focus:bg-white"
+                    placeholder="admin@school.com"
+                  />
+                </div>
               </div>
-            </div>
-            {/* Mobile menu button */}
-            <div className="md:hidden flex items-center">
+
+              <div>
+                <div className="flex items-center justify-between mb-1.5">
+                  <label className="block text-sm font-medium text-slate-700" htmlFor="password">
+                    Password
+                  </label>
+                  <a href="#" className="text-sm font-medium text-blue-600 hover:text-blue-500">
+                    Forgot password?
+                  </a>
+                </div>
+                <div className="relative group">
+                  <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                    <Lock className="h-5 w-5 text-slate-400 group-focus-within:text-blue-500 transition-colors" />
+                  </div>
+                  <input
+                    id="password"
+                    type="password"
+                    required
+                    value={password}
+                    onChange={(e) => setPassword(e.target.value)}
+                    className="block w-full pl-10 pr-3 py-3 border border-slate-200 rounded-xl focus:ring-2 focus:ring-blue-600 focus:border-transparent transition-all sm:text-sm bg-slate-50 focus:bg-white"
+                    placeholder="••••••••"
+                  />
+                </div>
+              </div>
+
+              <div className="flex items-center mt-4">
+                <input
+                  id="remember-me"
+                  name="remember-me"
+                  type="checkbox"
+                  className="h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300 rounded cursor-pointer"
+                />
+                <label htmlFor="remember-me" className="ml-2 block text-sm text-slate-600 cursor-pointer">
+                  Remember me for 30 days
+                </label>
+              </div>
+
               <button
-                onClick={() => setIsMobileMenuOpen(!isMobileMenuOpen)}
-                className="inline-flex items-center justify-center p-2 rounded-md text-slate-400 hover:text-slate-500 hover:bg-slate-100 focus:outline-none focus:ring-2 focus:ring-inset focus:ring-blue-500"
-                aria-expanded="false"
+                type="submit"
+                disabled={isLoading}
+                className="group w-full flex justify-center items-center py-3 px-4 border border-transparent text-sm font-medium rounded-xl text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 transition-all shadow-md shadow-blue-500/30 mt-6 disabled:opacity-70 disabled:cursor-not-allowed"
               >
-                <span className="sr-only">Open main menu</span>
-                {!isMobileMenuOpen ? (
-                  <svg className="block h-6 w-6" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor" aria-hidden="true">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M4 6h16M4 12h16M4 18h16" />
+                {isLoading ? (
+                  <svg className="animate-spin -ml-1 mr-3 h-5 w-5 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                    <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+                    <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
                   </svg>
                 ) : (
-                  <svg className="block h-6 w-6" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor" aria-hidden="true">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M6 18L18 6M6 6l12 12" />
-                  </svg>
+                  <>
+                    Sign in to Dashboard
+                    <ArrowRight className="ml-2 w-4 h-4 group-hover:translate-x-1 transition-transform" />
+                  </>
                 )}
               </button>
-            </div>
+            </form>
           </div>
+
+          <p className="text-center text-sm text-slate-500 mt-8 mb-6 md:mb-0">
+            Need help? Contact <a href="#" className="font-medium text-slate-900 hover:text-blue-600">IT Support</a>
+          </p>
         </div>
-
-        {/* Mobile menu, show/hide based on menu state. */}
-        {isMobileMenuOpen && (
-          <div className="md:hidden bg-white border-t border-slate-100 shadow-lg">
-            <div className="px-2 pt-2 pb-3 space-y-1 sm:px-3">
-              <Link href="#" className="text-slate-600 hover:bg-slate-50 hover:text-blue-600 block px-3 py-2 rounded-md text-base font-medium">Features</Link>
-              <Link href="#" className="text-slate-600 hover:bg-slate-50 hover:text-blue-600 block px-3 py-2 rounded-md text-base font-medium">About</Link>
-              <Link href="#" className="text-slate-600 hover:bg-slate-50 hover:text-blue-600 block px-3 py-2 rounded-md text-base font-medium">Contact</Link>
-              <Link href="/dashboard" className="text-blue-600 hover:bg-blue-50 block px-3 py-2 rounded-md text-base font-bold mt-4">
-                Login
-              </Link>
-            </div>
-          </div>
-        )}
-      </nav>
-
-      {/* Hero Section */}
-      <main className="pt-32 pb-16 sm:pt-40 sm:pb-24 lg:pb-32 overflow-hidden">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 relative">
-          <div className="lg:grid lg:grid-cols-12 lg:gap-16 items-center">
-            <div className="sm:text-center md:max-w-2xl md:mx-auto lg:col-span-6 lg:text-left">
-              <div className="inline-flex items-center px-3 py-1 rounded-full bg-blue-50 text-blue-600 text-sm font-medium mb-6">
-                <span className="flex h-2 w-2 rounded-full bg-blue-600 mr-2"></span>
-                New Academic Year Ready
-              </div>
-              <h1 className="text-4xl tracking-tight font-extrabold text-slate-900 sm:text-5xl md:text-6xl lg:text-5xl xl:text-6xl">
-                <span className="block">Simplify Your</span>
-                <span className="block text-blue-600">School Management</span>
-              </h1>
-              <p className="mt-4 text-lg text-slate-600 sm:mt-6">
-                A clean, intuitive platform to manage students, academics, and administration. Focus on education, not paperwork.
-              </p>
-              <div className="mt-8 sm:max-w-lg sm:mx-auto sm:text-center lg:text-left lg:mx-0 flex flex-col sm:flex-row gap-4">
-                <Link href="/dashboard" className="inline-flex items-center justify-center px-8 py-3 border border-transparent text-base font-medium rounded-full text-white bg-blue-600 hover:bg-blue-700 md:py-4 md:text-lg shadow-lg shadow-blue-200 transition-all hover:-translate-y-0.5">
-                  Get Started
-                </Link>
-                <Link href="#" className="inline-flex items-center justify-center px-8 py-3 border border-slate-200 text-base font-medium rounded-full text-slate-600 hover:bg-slate-50 hover:text-slate-900 md:py-4 md:text-lg transition-all">
-                  View Demo
-                </Link>
-              </div>
-            </div>
-            <div className="mt-12 relative sm:max-w-lg sm:mx-auto lg:mt-0 lg:max-w-none lg:mx-0 lg:col-span-6">
-              <div className="relative mx-auto w-full rounded-2xl shadow-xl lg:max-w-md overflow-hidden bg-white border border-slate-200">
-                <img
-                  src="https://images.unsplash.com/photo-1531545514256-b1400bc00f31?auto=format&fit=crop&q=80&w=1000"
-                  alt="Student using tablet"
-                  className="w-full h-full object-cover"
-                />
-              </div>
-            </div>
-          </div>
-        </div>
-      </main>
-
-      {/* Features Grid */}
-      <section className="py-20 bg-slate-50">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="text-center max-w-3xl mx-auto">
-            <h2 className="text-base text-blue-600 font-semibold tracking-wide uppercase">Features</h2>
-            <p className="mt-2 text-3xl leading-8 font-bold tracking-tight text-slate-900 sm:text-4xl">
-              Everything you need, nothing you don't
-            </p>
-            <p className="mt-4 text-lg text-slate-600">
-              Powerful tools wrapped in a simple, elegant interface designed for everyone.
-            </p>
-          </div>
-
-          <div className="mt-16">
-            <div className="grid grid-cols-1 gap-8 sm:grid-cols-2 lg:grid-cols-3">
-              {[
-                { title: "Student Profiles", desc: "Manage enrollment, attendance, and performance in one place.", icon: "bg-blue-100 text-blue-600" },
-                { title: "Smart Scheduling", desc: "Effortlessly create and manage class timetables and events.", icon: "bg-purple-100 text-purple-600" },
-                { title: "Instant Communication", desc: "Connect teachers, parents, and students seamlessly.", icon: "bg-teal-100 text-teal-600" },
-              ].map((feature, i) => (
-                <div key={i} className="relative p-8 bg-white rounded-2xl shadow-sm border border-slate-100 hover:shadow-md transition-shadow">
-                  <div className={`h-12 w-12 rounded-xl ${feature.icon} flex items-center justify-center text-xl mb-5`}>
-                    ✦
-                  </div>
-                  <h3 className="text-xl font-semibold text-slate-900">{feature.title}</h3>
-                  <p className="mt-3 text-base text-slate-600 leading-relaxed">{feature.desc}</p>
-                </div>
-              ))}
-            </div>
-          </div>
-        </div>
-      </section>
+      </div>
     </div>
   );
 }

@@ -19,6 +19,7 @@ import { StudentEnrollmentsModule } from './modules/student-enrollments/student-
 import { Student } from './modules/students/entities/student.entity';
 import { AcademicSession } from './modules/academic-sessions/entities/academic-session.entity';
 import { StudentEnrollment } from './modules/student-enrollments/entities/student-enrollment.entity';
+import { ExamsModule } from './modules/exams/exams.module';
 @Module({
   imports: [
     ConfigModule.forRoot({
@@ -38,6 +39,7 @@ import { StudentEnrollment } from './modules/student-enrollments/entities/studen
     FeesModule,
     AcademicSessionsModule,
     StudentEnrollmentsModule,
+    ExamsModule,
   ],
   controllers: [AppController],
   providers: [AppService],

@@ -218,6 +218,13 @@ export default function EnrollmentPage() {
         { header: "Name", render: (s: any) => `${s.firstName} ${s.lastName}`, sortable: true, sortKey: "firstName" },
         { header: "Class / Section", render: (s: any) => s.class ? `${s.class.name} - ${s.section?.name}` : 'Not Assigned' },
         {
+            header: "Roll No",
+            render: (s: any) => {
+                const activeEnrollment = s.enrollments?.find((e: any) => e.status === 'ACTIVE');
+                return activeEnrollment?.rollNo ?? '-';
+            }
+        },
+        {
             header: "Enrolled Subjects",
             render: (s: any) => (
                 <div className="flex flex-wrap gap-1">
